@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prim's Algorithm - Greedy Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <a href="index.html">Chapter 5</a> &gt; <span>Prim's MST</span>
+        </div>
+        <div class="page-title">Prim's Algorithm</div>
+        <div></div>
+    </header>
+
+    <div class="main-grid">
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Problem</h3>
+                <p class="status-text" style="font-size: 0.9rem; min-height: auto;">
+                    Find Minimum Spanning Tree (MST) starting from root.
+                    <br><br>
+                    <strong>Strategy:</strong> Grow tree by adding cheapest edge connecting tree to a non-tree vertex.
+                </p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <button id="btnPrev">⏮</button>
+                    <button id="btnPlay" class="primary-btn">▶ Play</button>
+                    <button id="btnNext">⏭</button>
+                    <button id="btnReset">↻</button>
+                    <button id="btnRandom" title="New Random Graph">🎲</button>
+                </div>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedRange" min="100" max="1900" value="1000">
+                    <span>Fast</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Step</h3>
+                <div id="step-counter" style="margin-bottom: 5px; font-weight: bold; color: var(--accent);">0 / 0</div>
+                <p id="step-desc" class="status-text">Ready...</p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Best Choice</h3>
+                <div id="best-choice-sidebar" class="best-choice-sidebar"></div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div id="canvas-container">
+                <!-- SVG Graph injected here -->
+            </div>
+            
+            <div class="pseudocode-container">
+                <div class="code-line" id="line-1">Initialize keys=∞, parent=NIL, root key=0</div>
+                <div class="code-line" id="line-2">Q = All vertices</div>
+                <div class="code-line" id="line-3">While Q is not empty:</div>
+                <div class="code-line" id="line-4">  u = ExtractMin(Q)</div>
+                <div class="code-line" id="line-5">  For each neighbor v of u:</div>
+                <div class="code-line" id="line-6">    If v in Q and weight(u,v) < key[v]:</div>
+                <div class="code-line" id="line-7">      key[v] = weight(u,v)</div>
+                <div class="code-line" id="line-8">      parent[v] = u</div>
+            </div>
+            
+            <div class="options-container" id="options-container">
+                <h3>Prim's Trace</h3>
+                
+                <div class="options-section">
+                    <div class="options-subsection">
+                        <strong>Groups</strong>
+                        <div id="tree-status" class="status-box"></div>
+                    </div>
+                    
+                    <div class="options-subsection">
+                        <strong>Current u</strong>
+                        <div id="current-u" class="status-box" style="font-weight: bold; color: var(--accent);"></div>
+                    </div>
+                    
+                    <div class="options-subsection">
+                        <strong>Neighbor Checks</strong>
+                        <div id="candidate-edges" class="candidate-list"></div>
+                    </div>
+                    
+                    <div class="options-subsection">
+                        <strong>Key/Parent Updates</strong>
+                        <div id="key-updates" class="updates-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Graph Data
+        let NODES = [
+            { id: 'A', x: 100, y: 100 },
+            { id: 'B', x: 300, y: 50 },
+            { id: 'C', x: 300, y: 150 },
+            { id: 'D', x: 500, y: 100 },
+            { id: 'E', x: 200, y: 250 },
+            { id: 'F', x: 400, y: 250 }
+        ];
+
+        let EDGES = [
+            { src: 'A', dest: 'B', w: 4 },
+            { src: 'A', dest: 'C', w: 2 },
+            { src: 'B', dest: 'C', w: 1 },
+            { src: 'B', dest: 'D', w: 5 },
+            { src: 'C', dest: 'E', w: 8 },
+            { src: 'C', dest: 'D', w: 10 },
+            { src: 'E', dest: 'F', w: 3 },
+            { src: 'D', dest: 'F', w: 6 },
+            { src: 'C', dest: 'F', w: 2 } // Interesting edge
+        ];
+
+        // Deduplicated edges (updated when EDGES changes)
+        let EDGES_DEDUPED = [];
+
+        // Random Graph Generator with organized circular layout
+        function generateRandomGraph() {
+            const numNodes = Math.floor(Math.random() * 3) + 5; // 5-7
+            const newNodes = [];
+            let newEdges = [];
+            const width = 600;
+            const height = 350;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35; // Circular layout radius
+
+            // Generate nodes in organized circular layout
+            for(let i=0; i<numNodes; i++) {
+                const angle = (2 * Math.PI * i) / numNodes;
+                const node = {
+                    id: String.fromCharCode(65 + i),
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                };
+                newNodes.push(node);
+            }
+
+            // Track edges to avoid duplicates
+            const edgeSet = new Set();
+            
+            for(let i=0; i<numNodes; i++) {
+                for(let j=i+1; j<numNodes; j++) {
+                    if(Math.random() < 0.3) {
+                        const edgeId = getEdgeId(newNodes[i].id, newNodes[j].id);
+                        if(!edgeSet.has(edgeId)) {
+                            edgeSet.add(edgeId);
+                            newEdges.push({ src: newNodes[i].id, dest: newNodes[j].id, w: Math.floor(Math.random()*15)+1 });
+                        }
+                    }
+                }
+            }
+            // Ensure connectivity - check for duplicates
+            for(let i=1; i<numNodes; i++) {
+                const target = Math.floor(Math.random() * i);
+                const edgeId = getEdgeId(newNodes[i].id, newNodes[target].id);
+                if(!edgeSet.has(edgeId)) {
+                    edgeSet.add(edgeId);
+                    newEdges.push({ src: newNodes[i].id, dest: newNodes[target].id, w: Math.floor(Math.random()*15)+1 });
+                }
+            }
+            
+            // Dedupe edges after generation
+            newEdges = dedupeEdges(newEdges);
+
+            NODES = newNodes;
+            EDGES = newEdges;
+            EDGES_DEDUPED = dedupeEdges(EDGES);
+            
+            // Regenerate steps with new graph
+            const steps = generateSteps();
+            player.setSteps(steps);
+            
+            // Reset to first step
+            player.reset();
+        }
+
+        // Initialize deduplicated edges
+        EDGES_DEDUPED = dedupeEdges(EDGES);
+
+        // Drag & Drop
+        let isDragging = false;
+        let draggedNodeId = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function handleMouseDown(e, nodeId) {
+            if (e.button !== 0) return;
+            isDragging = true;
+            draggedNodeId = nodeId;
+            e.stopPropagation();
+            e.preventDefault();
+            const rect = container.getBoundingClientRect();
+            const node = NODES.find(n => n.id === nodeId);
+            if(node) {
+                dragOffsetX = (e.clientX - rect.left) - node.x;
+                dragOffsetY = (e.clientY - rect.top) - node.y;
+            }
+            document.body.style.cursor = 'grabbing';
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggedNodeId) return;
+            const rect = container.getBoundingClientRect();
+            const node = NODES.find(n => n.id === draggedNodeId);
+            if (node) {
+                let x = (e.clientX - rect.left) - dragOffsetX;
+                let y = (e.clientY - rect.top) - dragOffsetY;
+                node.x = Math.max(25, Math.min(rect.width - 25, x));
+                node.y = Math.max(25, Math.min(rect.height - 25, y));
+                player.updateUI();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if(isDragging) {
+                isDragging = false;
+                draggedNodeId = null;
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        let player;
+        const container = document.getElementById('canvas-container');
+
+        // Helpers
+        function getEdgeId(u, v) {
+            return [u, v].sort().join('-');
+        }
+
+        // Dedupe parallel edges - keep only minimum weight edge per pair
+        function dedupeEdges(edges) {
+            const edgeMap = new Map();
+            
+            edges.forEach((edge, index) => {
+                const normalizedId = getEdgeId(edge.src, edge.dest);
+                const existing = edgeMap.get(normalizedId);
+                
+                if (!existing || edge.w < existing.w) {
+                    // Keep this edge (either first occurrence or smaller weight)
+                    edgeMap.set(normalizedId, { ...edge, originalIndex: index });
+                }
+            });
+            
+            return Array.from(edgeMap.values());
+        }
+
+        // Min-Priority Queue using Binary Min-Heap
+        class MinPriorityQueue {
+            constructor(keyFn) {
+                this.heap = [];
+                this.keyFn = keyFn; // Function to get key value for comparison
+                this.vertexIndex = {}; // Map vertex id to heap index
+            }
+
+            insert(vertex) {
+                this.heap.push(vertex);
+                this.vertexIndex[vertex] = this.heap.length - 1;
+                this.bubbleUp(this.heap.length - 1);
+            }
+
+            extractMin() {
+                if (this.heap.length === 0) return null;
+                if (this.heap.length === 1) {
+                    const min = this.heap.pop();
+                    delete this.vertexIndex[min];
+                    return min;
+                }
+
+                const min = this.heap[0];
+                delete this.vertexIndex[min];
+                const last = this.heap.pop();
+                this.heap[0] = last;
+                this.vertexIndex[last] = 0;
+                this.bubbleDown(0);
+                return min;
+            }
+
+            decreaseKey(vertex, newKey) {
+                const idx = this.vertexIndex[vertex];
+                if (idx === undefined) return false;
+                this.keyFn.setKey(vertex, newKey);
+                this.bubbleUp(idx);
+                return true;
+            }
+
+            contains(vertex) {
+                return this.vertexIndex[vertex] !== undefined;
+            }
+
+            isEmpty() {
+                return this.heap.length === 0;
+            }
+
+            bubbleUp(idx) {
+                while (idx > 0) {
+                    const parentIdx = Math.floor((idx - 1) / 2);
+                    if (this.compare(idx, parentIdx) >= 0) break;
+                    this.swap(idx, parentIdx);
+                    idx = parentIdx;
+                }
+            }
+
+            bubbleDown(idx) {
+                while (true) {
+                    let smallest = idx;
+                    const left = 2 * idx + 1;
+                    const right = 2 * idx + 2;
+
+                    if (left < this.heap.length && this.compare(left, smallest) < 0) {
+                        smallest = left;
+                    }
+                    if (right < this.heap.length && this.compare(right, smallest) < 0) {
+                        smallest = right;
+                    }
+
+                    if (smallest === idx) break;
+                    this.swap(idx, smallest);
+                    idx = smallest;
+                }
+            }
+
+            compare(i, j) {
+                const keyI = this.keyFn.getKey(this.heap[i]);
+                const keyJ = this.keyFn.getKey(this.heap[j]);
+                if (keyI !== keyJ) {
+                    return keyI - keyJ;
+                }
+                // Tie-break: smallest vertex id
+                return this.heap[i] < this.heap[j] ? -1 : (this.heap[i] > this.heap[j] ? 1 : 0);
+            }
+
+            swap(i, j) {
+                const temp = this.heap[i];
+                this.heap[i] = this.heap[j];
+                this.heap[j] = temp;
+                this.vertexIndex[this.heap[i]] = i;
+                this.vertexIndex[this.heap[j]] = j;
+            }
+        }
+
+        function generateSteps() {
+            let steps = [];
+            
+            // Use globally deduplicated edges
+            if (EDGES_DEDUPED.length === 0) {
+                EDGES_DEDUPED = dedupeEdges(EDGES);
+            }
+            
+            // Initialize keys and parents
+            let key = {};
+            let parent = {};
+            let keyPrev = {}; // Track previous key values for strikethrough display
+            NODES.forEach(n => {
+                key[n.id] = 999; // Infinity
+                parent[n.id] = null;
+                keyPrev[n.id] = null;
+            });
+            const root = NODES[0].id;
+            key[root] = 0; // Root has key 0
+
+            // Create Min-Priority Queue
+            const keyFn = {
+                getKey: (v) => key[v],
+                setKey: (v, newKey) => { key[v] = newKey; }
+            };
+            const Q = new MinPriorityQueue(keyFn);
+            NODES.forEach(n => Q.insert(n.id));
+
+            let mstEdges = [];
+            let processed = [];
+
+            steps.push({
+                description: `Initialize: keys=∞, parent=NIL for all vertices. Root ${root} has key=0.`,
+                codeLine: 1,
+                state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [], processed: [], current: null, checkingEdge: null, deletedEdges: [], Q: [...Q.heap] }
+            });
+
+            while(!Q.isEmpty()) {
+                // Extract Min
+                const u = Q.extractMin();
+                
+                // If u has a parent, add edge to MST
+                if(parent[u]) {
+                    mstEdges.push(getEdgeId(parent[u], u));
+                }
+                
+                processed.push(u);
+
+                steps.push({
+                    description: `u = ExtractMin(Q): <strong>${u}</strong> (Key: ${key[u]}). ExtractMin(Q) chooses the vertex in Q with the smallest key. Remove ${u} from Q and add to T.`,
+                    codeLine: 4,
+                    state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: u, checkingEdge: null, deletedEdges: [], Q: [...Q.heap] }
+                });
+
+                // For each neighbor v of u
+                const neighbors = EDGES_DEDUPED.filter(e => e.src === u || e.dest === u);
+                
+                for(let edge of neighbors) {
+                    const v = edge.src === u ? edge.dest : edge.src;
+                    const w = edge.w;
+                    const edgeId = getEdgeId(u, v);
+
+                    // Check if v in Q and w(u,v) < key[v]
+                    if(Q.contains(v)) {
+                         steps.push({
+                            description: `Checking neighbor <strong>v=${v}</strong> of u. Edge weight: w(${u},${v})=${w}.`,
+                            codeLine: 5,
+                            state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: u, checkingEdge: edgeId, deletedEdges: [], Q: [...Q.heap] }
+                        });
+
+                        // Show substitution-style condition check
+                        const conditionResult = w < key[v];
+                        const keyVStr = key[v] === 999 ? '∞' : key[v];
+                        steps.push({
+                            description: `Check condition: w(${u},${v}) < key[${v}]<br>${w} < ${keyVStr}<br>${conditionResult ? 'True' : 'False'}`,
+                            codeLine: 6,
+                            state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: u, checkingEdge: edgeId, deletedEdges: [], Q: [...Q.heap] }
+                        });
+
+                        if(w < key[v]) {
+                            // Store previous key for strikethrough display
+                            keyPrev[v] = key[v];
+                            parent[v] = u;
+                            const oldKey = key[v];
+                            key[v] = w;
+                            Q.decreaseKey(v, w);
+                            
+                            const oldKeyStr = oldKey === 999 ? '∞' : oldKey;
+                            steps.push({
+                                description: `Condition is True. Update:<br>parent[${v}] = ${u}<br>key[${v}] = ${w} (was ${oldKeyStr})<br>DecreaseKey(Q, ${v}, ${w})`,
+                                codeLine: 7,
+                                state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: u, checkingEdge: edgeId, highlightUpdate: v, deletedEdges: [], Q: [...Q.heap] }
+                            });
+                        } else {
+                            steps.push({
+                                description: `Condition is False. w(${u},${v}) >= key[${v}]. No update needed.`,
+                                codeLine: 6,
+                                state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: u, checkingEdge: edgeId, deletedEdges: [], Q: [...Q.heap] }
+                            });
+                        }
+                    }
+                }
+            }
+
+            steps.push({
+                description: "MST Complete. All vertices processed.",
+                codeLine: null,
+                state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: null, checkingEdge: null, deletedEdges: [] }
+            });
+
+            // Final step: Mark unused edges as deleted
+            const allEdgeIds = EDGES_DEDUPED.map(e => getEdgeId(e.src, e.dest));
+            const deletedEdges = allEdgeIds.filter(edgeId => !mstEdges.includes(edgeId));
+
+            steps.push({
+                description: `Remove unused edges. Deleted ${deletedEdges.length} edge(s) that are not part of the MST.`,
+                codeLine: null,
+                state: { key: {...key}, parent: {...parent}, keyPrev: {...keyPrev}, mstEdges: [...mstEdges], processed: [...processed], current: null, checkingEdge: null, deletedEdges: [...deletedEdges] }
+            });
+
+            return steps;
+        }
+
+        function render(state) {
+            container.innerHTML = '';
+            const svg = createSVGElement('svg', { width: '100%', height: '100%' });
+            
+            // Define arrow markers for parent pointers
+            const defs = createSVGElement('defs', {});
+            const marker = createSVGElement('marker', {
+                id: 'arrowhead-red',
+                markerWidth: '10',
+                markerHeight: '10',
+                refX: '9',
+                refY: '3',
+                orient: 'auto'
+            });
+            const polygon = createSVGElement('polygon', {
+                points: '0 0, 10 3, 0 6',
+                fill: '#ff3d00'
+            });
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            svg.appendChild(defs);
+            
+            // Track rendered edges to avoid duplicates
+            const renderedEdges = new Set();
+            
+            // Draw Edges - use deduplicated edges
+            EDGES_DEDUPED.forEach(edge => {
+                const edgeId = getEdgeId(edge.src, edge.dest);
+                
+                const u = NODES.find(n => n.id === edge.src);
+                const v = NODES.find(n => n.id === edge.dest);
+                // Safety
+                if(!u || !v) return;
+
+                const line = createSVGElement('line', {
+                    x1: u.x, y1: u.y, x2: v.x, y2: v.y,
+                    class: 'edge',
+                    'stroke-opacity': 0.3,
+                    'data-edge-id': edgeId
+                });
+
+                // Determine edge type: Final MST > Tentative > Checking > Deleted > Regular
+                // Check if this is a tentative edge (parent edge for a vertex still in Q)
+                let isTentative = false;
+                const Q = NODES.map(n => n.id).filter(id => !state.processed.includes(id));
+                Q.forEach(v => {
+                    if (state.parent[v] !== null) {
+                        const tentativeEdgeId = getEdgeId(state.parent[v], v);
+                        if (edgeId === tentativeEdgeId) {
+                            isTentative = true;
+                        }
+                    }
+                });
+
+                if(state.deletedEdges && state.deletedEdges.includes(edgeId)) {
+                    // Deleted edges: dashed, gray, low opacity (only after MST complete)
+                    line.setAttribute('stroke', '#ff3d00');
+                    line.setAttribute('stroke-width', '2');
+                    line.setAttribute('stroke-opacity', '0.2');
+                    line.setAttribute('stroke-dasharray', '5,5');
+                } else if(state.mstEdges.includes(edgeId)) {
+                    // FINAL MST edges: green, solid, thick
+                    line.setAttribute('stroke', '#00e676');
+                    line.setAttribute('stroke-width', '4');
+                    line.setAttribute('stroke-opacity', '1');
+                } else if(isTentative) {
+                    // TENTATIVE edges: green, dashed, thinner (for vertices in Q with parent)
+                    line.setAttribute('stroke', '#00e676');
+                    line.setAttribute('stroke-width', '2.5');
+                    line.setAttribute('stroke-opacity', '0.7');
+                    line.setAttribute('stroke-dasharray', '6,4');
+                } else if(state.checkingEdge === edgeId) {
+                    // Currently checking: yellow
+                    line.setAttribute('stroke', '#ffea00');
+                    line.setAttribute('stroke-width', '3');
+                    line.setAttribute('stroke-opacity', '1');
+                } else {
+                    // Regular edges: gray, low opacity
+                    line.setAttribute('stroke', '#666');
+                    line.setAttribute('stroke-width', '2');
+                    line.setAttribute('stroke-opacity', '0.3');
+                }
+
+                // Append line first (behind everything)
+                svg.appendChild(line);
+
+                // Weight Label - improved visibility with background
+                const midX = (u.x + v.x) / 2;
+                const midY = (u.y + v.y) / 2;
+                
+                // Calculate angle to offset label perpendicular to edge
+                const dx = v.x - u.x;
+                const dy = v.y - u.y;
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI / 2;
+                const offsetX = Math.cos(perpAngle) * 18; // Offset perpendicular (slightly larger)
+                const offsetY = Math.sin(perpAngle) * 18;
+                
+                if(!state.deletedEdges || !state.deletedEdges.includes(edgeId)) {
+                    // Calculate dynamic width based on number of digits
+                    const weightStr = String(edge.w);
+                    const textWidth = Math.max(24, weightStr.length * 9 + 8); // Dynamic width with minimum
+                    
+                    // Background rectangle for better visibility - append after line (on top)
+                    const bgRect = createSVGElement('rect', {
+                        x: midX + offsetX - textWidth / 2,
+                        y: midY + offsetY - 10,
+                        width: textWidth,
+                        height: 20,
+                        rx: 4,
+                        fill: state.mstEdges.includes(edgeId) ? 'rgba(0, 230, 118, 0.95)' : 'rgba(0, 0, 0, 0.9)',
+                        stroke: state.mstEdges.includes(edgeId) ? '#00e676' : '#aaa',
+                        'stroke-width': '1.5',
+                        'stroke-opacity': '1'
+                    });
+                    svg.appendChild(bgRect);
+                    
+                    // Text label with better contrast - append last (on top of background)
+                    const text = createSVGElement('text', {
+                        x: midX + offsetX,
+                        y: midY + offsetY + 2,
+                        fill: state.mstEdges.includes(edgeId) ? '#000' : '#fff',
+                        'font-size': '15px',
+                        'font-weight': 'bold',
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'central',
+                        style: 'pointer-events: none; user-select: none;'
+                    });
+                    text.textContent = edge.w;
+                    svg.appendChild(text);
+                } else {
+                    // Deleted edge - show with faded background
+                    const weightStr = String(edge.w);
+                    const textWidth = Math.max(20, weightStr.length * 7 + 6);
+                    
+                    const bgRect = createSVGElement('rect', {
+                        x: midX + offsetX - textWidth / 2,
+                        y: midY + offsetY - 8,
+                        width: textWidth,
+                        height: 14,
+                        rx: 3,
+                        fill: 'rgba(0, 0, 0, 0.6)',
+                        stroke: '#ff3d00',
+                        'stroke-width': '1',
+                        'stroke-opacity': '0.4',
+                        'stroke-dasharray': '3,3'
+                    });
+                    svg.appendChild(bgRect);
+                    
+                    const text = createSVGElement('text', {
+                        x: midX + offsetX,
+                        y: midY + offsetY + 2,
+                        fill: '#999',
+                        'font-size': '11px',
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'central',
+                        opacity: '0.5',
+                        style: 'pointer-events: none; user-select: none;'
+                    });
+                    text.textContent = edge.w;
+                    svg.appendChild(text);
+                }
+            });
+
+            // Draw parent pointer arrows (red arrows from parent[v] to v for vertices still in Q)
+            NODES.forEach(node => {
+                if (!state.processed.includes(node.id) && state.parent[node.id] !== null) {
+                    const parentNode = NODES.find(n => n.id === state.parent[node.id]);
+                    if (parentNode) {
+                        // Calculate arrow position (from parent to child, offset to avoid overlap)
+                        const dx = node.x - parentNode.x;
+                        const dy = node.y - parentNode.y;
+                        const dist = Math.hypot(dx, dy);
+                        const offset = 25; // Distance from node center
+                        const startX = parentNode.x + (dx / dist) * offset;
+                        const startY = parentNode.y + (dy / dist) * offset;
+                        const endX = node.x - (dx / dist) * offset;
+                        const endY = node.y - (dy / dist) * offset;
+                        
+                        const arrow = createSVGElement('line', {
+                            x1: startX,
+                            y1: startY,
+                            x2: endX,
+                            y2: endY,
+                            stroke: '#ff3d00',
+                            'stroke-width': '2',
+                            'marker-end': 'url(#arrowhead-red)',
+                            opacity: '0.8'
+                        });
+                        svg.appendChild(arrow);
+                    }
+                }
+            });
+
+            // Draw Nodes
+            NODES.forEach(node => {
+                const g = createSVGElement('g', { 
+                    transform: `translate(${node.x}, ${node.y})`,
+                    style: 'cursor: grab'
+                });
+                g.addEventListener('mousedown', (e) => handleMouseDown(e, node.id));
+                
+                const circle = createSVGElement('circle', {
+                    r: 20,
+                    class: 'node'
+                });
+
+                // Color logic: processed vertices (removed from Q) are RED
+                if(state.processed.includes(node.id)) {
+                    circle.setAttribute('fill', '#ff3d00'); // Red - removed from Q
+                    circle.setAttribute('stroke', '#ff3d00');
+                } else if(state.key[node.id] < 999) {
+                    circle.setAttribute('fill', '#2196f3'); // Blue - in Q with tentative key
+                } else {
+                    circle.setAttribute('fill', '#333'); // Dark - unreachable
+                }
+
+                // Current extracted vertex gets yellow stroke
+                if(state.current === node.id) {
+                    circle.setAttribute('stroke', '#ffea00');
+                    circle.setAttribute('stroke-width', '4');
+                } else {
+                    circle.setAttribute('stroke-width', '2');
+                }
+
+                const label = createSVGElement('text', {
+                    dy: 5,
+                    'text-anchor': 'middle',
+                    fill: '#fff',
+                    'font-weight': 'bold',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                label.textContent = `${node.id}`;
+
+                // Key Label with strikethrough for old values
+                const keyGroup = createSVGElement('g', {
+                    transform: `translate(0, -25)`,
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                
+                const k = state.key[node.id];
+                const kPrev = state.keyPrev && state.keyPrev[node.id];
+                const showStrikethrough = kPrev !== null && kPrev !== undefined && !state.processed.includes(node.id);
+                
+                if (showStrikethrough && kPrev !== k) {
+                    // Show old value with strikethrough
+                    const oldKeyText = createSVGElement('text', {
+                        'text-anchor': 'middle',
+                        fill: '#999',
+                        'font-size': '11px',
+                        'text-decoration': 'line-through',
+                        opacity: '0.7',
+                        dx: '-8'
+                    });
+                    oldKeyText.textContent = kPrev === 999 ? '∞' : kPrev;
+                    keyGroup.appendChild(oldKeyText);
+                    
+                    // Show new value
+                    const newKeyText = createSVGElement('text', {
+                        'text-anchor': 'middle',
+                        fill: '#00bcd4',
+                        'font-size': '12px',
+                        'font-weight': 'bold',
+                        dx: '8'
+                    });
+                    newKeyText.textContent = k === 999 ? '∞' : k;
+                    keyGroup.appendChild(newKeyText);
+                } else {
+                    // Show current key only
+                    const keyLabel = createSVGElement('text', {
+                        'text-anchor': 'middle',
+                        fill: '#00bcd4',
+                        'font-size': '12px',
+                        'font-weight': 'bold'
+                    });
+                    keyLabel.textContent = k === 999 ? '∞' : k;
+                    keyGroup.appendChild(keyLabel);
+                }
+
+                g.appendChild(circle);
+                g.appendChild(label);
+                g.appendChild(keyGroup);
+                
+                // Add "u" marker for current extracted vertex
+                if(state.current === node.id) {
+                    const uMarker = createSVGElement('text', {
+                        x: 30,
+                        y: -5,
+                        fill: '#ffea00',
+                        'font-size': '14px',
+                        'font-weight': 'bold',
+                        style: 'pointer-events: none; user-select: none;'
+                    });
+                    uMarker.textContent = 'u';
+                    g.appendChild(uMarker);
+                    
+                    // Add arrow pointing to node (simple line with arrowhead)
+                    const uArrow = createSVGElement('line', {
+                        x1: node.x + 28,
+                        y1: node.y - 5,
+                        x2: node.x + 22,
+                        y2: node.y - 5,
+                        stroke: '#ffea00',
+                        'stroke-width': '2',
+                        opacity: '0.9'
+                    });
+                    // Add arrowhead triangle
+                    const uArrowHead = createSVGElement('polygon', {
+                        points: `${node.x + 22},${node.y - 5} ${node.x + 18},${node.y - 8} ${node.x + 18},${node.y - 2}`,
+                        fill: '#ffea00',
+                        opacity: '0.9'
+                    });
+                    svg.appendChild(uArrow);
+                    svg.appendChild(uArrowHead);
+                }
+                
+                svg.appendChild(g);
+            });
+
+            container.appendChild(svg);
+        }
+
+        // Track previous state for key/parent updates
+        let previousState = null;
+        let hoveredEdgeId = null;
+
+        // Get neighbors of current u that are in Q
+        function getNeighborsInQ(state, u) {
+            if (!u) return [];
+            const Q = NODES.map(n => n.id).filter(id => !state.processed.includes(id));
+            const neighbors = [];
+            
+            EDGES_DEDUPED.forEach(edge => {
+                const v = edge.src === u ? edge.dest : (edge.dest === u ? edge.src : null);
+                if (v && Q.includes(v)) {
+                    neighbors.push({
+                        v: v,
+                        weight: edge.w,
+                        edgeId: getEdgeId(u, v)
+                    });
+                }
+            });
+            
+            return neighbors;
+        }
+
+        // Get tentative edges (parent edges for vertices in Q)
+        function getTentativeEdges(state) {
+            const Q = NODES.map(n => n.id).filter(id => !state.processed.includes(id));
+            const tentative = [];
+            
+            Q.forEach(v => {
+                if (state.parent[v] !== null) {
+                    tentative.push({
+                        v: v,
+                        parent: state.parent[v],
+                        key: state.key[v],
+                        edgeId: getEdgeId(state.parent[v], v)
+                    });
+                }
+            });
+            
+            return tentative;
+        }
+
+        // Get key/parent updates between states
+        function getKeyParentUpdates(currentState, previousState) {
+            if (!previousState) return [];
+            
+            const updates = [];
+            NODES.forEach(node => {
+                const id = node.id;
+                const oldKey = previousState.key[id];
+                const newKey = currentState.key[id];
+                const oldParent = previousState.parent[id];
+                const newParent = currentState.parent[id];
+                
+                const keyChanged = oldKey !== newKey;
+                const parentChanged = oldParent !== newParent;
+                
+                if (keyChanged || parentChanged) {
+                    updates.push({
+                        vertex: id,
+                        keyOld: oldKey === 999 ? '∞' : oldKey,
+                        keyNew: newKey === 999 ? '∞' : newKey,
+                        keyChanged: keyChanged,
+                        parentOld: oldParent || 'NIL',
+                        parentNew: newParent || 'NIL',
+                        parentChanged: parentChanged
+                    });
+                }
+            });
+            
+            return updates;
+        }
+
+        // Get chosen edge (minimum safe edge that was just added)
+        function getChosenEdge(state, previousState, step) {
+            if (!state.current || !previousState) return null;
+            
+            // Find the edge that was just added to MST
+            const previousMstEdges = previousState.mstEdges || [];
+            const currentMstEdges = state.mstEdges || [];
+            
+            // Find newly added edge
+            const newEdgeId = currentMstEdges.find(edgeId => !previousMstEdges.includes(edgeId));
+            
+            if (newEdgeId) {
+                // Parse edge ID (format: "A-B" or "B-A")
+                const [u, v] = newEdgeId.split('-');
+                const edge = EDGES.find(e => {
+                    const eId = getEdgeId(e.src, e.dest);
+                    return eId === newEdgeId;
+                });
+                
+                if (edge) {
+                    return {
+                        edgeId: newEdgeId,
+                        display: `${u} — ${v}`,
+                        weight: edge.w
+                    };
+                }
+            }
+            
+            return null;
+        }
+
+        // Update options card
+        function updateOptionsCard(state, step) {
+            const treeStatusEl = document.getElementById('tree-status');
+            const currentUEl = document.getElementById('current-u');
+            const candidateEdgesEl = document.getElementById('candidate-edges');
+            const bestChoiceSidebarEl = document.getElementById('best-choice-sidebar');
+            const keyUpdatesEl = document.getElementById('key-updates');
+            
+            if (!treeStatusEl || !currentUEl || !candidateEdgesEl || !bestChoiceSidebarEl || !keyUpdatesEl) return;
+            
+            const T = state.processed || [];
+            const Q = NODES.map(n => n.id).filter(id => !T.includes(id));
+            const chosenEdge = getChosenEdge(state, previousState, step);
+            const updates = getKeyParentUpdates(state, previousState);
+            
+            // Update Tree Status
+            const TList = T.length > 0 ? T.join(', ') : '{}';
+            const QList = Q.length > 0 ? Q.join(', ') : '{}';
+            treeStatusEl.innerHTML = `
+                <div>In Tree (T): { ${TList} }</div>
+                <div>Out of Tree (Q): { ${QList} }</div>
+            `;
+            
+            // Update Current u
+            if (state.current) {
+                currentUEl.innerHTML = `Current vertex u = ${state.current} (ExtractMin)`;
+            } else {
+                currentUEl.innerHTML = 'No current vertex';
+            }
+            
+            // Update Candidate Edges - show neighbors of current u
+            candidateEdgesEl.innerHTML = '';
+            if (state.current) {
+                const neighbors = getNeighborsInQ(state, state.current);
+                if (neighbors.length === 0) {
+                    candidateEdgesEl.innerHTML = '<div style="color: var(--text-mute); font-size: 0.7rem; padding: 8px;">No neighbors in Q</div>';
+                } else {
+                    neighbors.forEach(neighbor => {
+                        const item = document.createElement('div');
+                        item.className = 'candidate-item';
+                        if (state.checkingEdge === neighbor.edgeId) {
+                            item.classList.add('active');
+                        }
+                        
+                        const keyV = state.key[neighbor.v];
+                        const keyVStr = keyV === 999 ? '∞' : keyV;
+                        item.innerHTML = `
+                            <div>
+                                <div class="candidate-edge">Edge: ${state.current} — ${neighbor.v}</div>
+                                <div class="candidate-reason">w = ${neighbor.weight}, key[${neighbor.v}] = ${keyVStr}</div>
+                            </div>
+                            <div class="candidate-weight">w = ${neighbor.weight}</div>
+                        `;
+                        
+                        // Hover interaction
+                        item.addEventListener('mouseenter', () => {
+                            hoveredEdgeId = neighbor.edgeId;
+                            player.updateUI();
+                        });
+                        
+                        item.addEventListener('mouseleave', () => {
+                            hoveredEdgeId = null;
+                            player.updateUI();
+                        });
+                        
+                        candidateEdgesEl.appendChild(item);
+                    });
+                }
+            } else {
+                candidateEdgesEl.innerHTML = '<div style="color: var(--text-mute); font-size: 0.7rem; padding: 8px;">No current vertex u</div>';
+            }
+            
+            // Update Best Choice in Sidebar - show tentative edges summary
+            const tentativeEdges = getTentativeEdges(state);
+            if (tentativeEdges.length > 0) {
+                const tentativeList = tentativeEdges.map(t => `${t.v} ← ${t.parent} (key=${t.key === 999 ? '∞' : t.key})`).join(', ');
+                bestChoiceSidebarEl.innerHTML = `
+                    <div style="margin-bottom: 8px;"><strong>Tentative edges:</strong></div>
+                    <div style="font-size: 0.85rem; line-height: 1.6;">${tentativeList}</div>
+                `;
+            } else {
+                bestChoiceSidebarEl.innerHTML = '<div style="color: var(--text-mute); font-size: 0.85rem;">No tentative edges yet</div>';
+            }
+            
+            // Update Key/Parent Updates - show substitution style
+            keyUpdatesEl.innerHTML = '';
+            if (updates.length === 0) {
+                keyUpdatesEl.innerHTML = '<div style="color: var(--text-mute); font-size: 0.7rem; padding: 8px;">No updates in this step</div>';
+            } else {
+                updates.forEach(update => {
+                    const item = document.createElement('div');
+                    item.className = 'update-item';
+                    
+                    // Find the edge that caused this update
+                    let edgeInfo = '';
+                    if (state.current && update.parentChanged && update.parentNew !== 'NIL' && update.parentNew === state.current) {
+                        const edge = EDGES_DEDUPED.find(e => {
+                            return (e.src === state.current && e.dest === update.vertex) || 
+                                   (e.dest === state.current && e.src === update.vertex);
+                        });
+                        if (edge) {
+                            const w = edge.w;
+                            edgeInfo = `<div style="margin-bottom: 4px; font-weight: 500;">w(${state.current},${update.vertex}) < key[${update.vertex}]</div>`;
+                            edgeInfo += `<div style="margin-left: 12px; color: var(--text-mute); font-size: 0.85rem;">${w} < ${update.keyOld}</div>`;
+                            edgeInfo += `<div style="margin-left: 12px; color: var(--success); font-weight: bold;">True</div>`;
+                        }
+                    }
+                    
+                    let updateLines = '';
+                    if (update.keyChanged) {
+                        updateLines += `<div>key[${update.vertex}] = ${update.keyNew}</div>`;
+                    }
+                    if (update.parentChanged) {
+                        updateLines += `<div>parent[${update.vertex}] = ${update.parentNew}</div>`;
+                    }
+                    
+                    item.innerHTML = edgeInfo + updateLines;
+                    keyUpdatesEl.appendChild(item);
+                });
+            }
+        }
+
+        // Enhanced render function with hover support
+        const originalRender = render;
+        function enhancedRender(state, step) {
+            originalRender(state, step);
+            
+            // Highlight hovered edge
+            if (hoveredEdgeId && container.querySelector('svg')) {
+                const svg = container.querySelector('svg');
+                const lines = svg.querySelectorAll('line[data-edge-id]');
+                lines.forEach(line => {
+                    const edgeId = line.getAttribute('data-edge-id');
+                    if (edgeId === hoveredEdgeId) {
+                        // Don't override MST edges or checking edges
+                        const currentStroke = line.getAttribute('stroke');
+                        if (currentStroke !== '#00e676' && currentStroke !== '#ffea00') {
+                            line.setAttribute('stroke', '#ffea00');
+                            line.setAttribute('stroke-width', '4');
+                            line.setAttribute('stroke-opacity', '1');
+                            line.style.filter = 'drop-shadow(0 0 8px rgba(255, 234, 0, 0.8))';
+                        } else if (currentStroke === '#ffea00' && state.checkingEdge !== edgeId) {
+                            // Keep hover highlight if not currently checking
+                            line.style.filter = 'drop-shadow(0 0 8px rgba(255, 234, 0, 0.8))';
+                        }
+                    } else {
+                        // Remove filter from non-hovered edges
+                        if (line.getAttribute('stroke') !== '#00e676' && 
+                            line.getAttribute('stroke') !== '#ffea00' &&
+                            state.checkingEdge !== edgeId) {
+                            line.style.filter = '';
+                        }
+                    }
+                });
+            } else {
+                // Remove all hover effects when not hovering
+                if (container.querySelector('svg')) {
+                    const svg = container.querySelector('svg');
+                    const lines = svg.querySelectorAll('line[data-edge-id]');
+                    lines.forEach(line => {
+                        const edgeId = line.getAttribute('data-edge-id');
+                        if (line.getAttribute('stroke') !== '#00e676' && 
+                            line.getAttribute('stroke') !== '#ffea00' &&
+                            state.checkingEdge !== edgeId) {
+                            line.style.filter = '';
+                        }
+                    });
+                }
+            }
+        }
+
+        const initialSteps = generateSteps();
+        player = new StepPlayer(enhancedRender, (stepIndex) => {
+            // Track previous state for updates
+            if (stepIndex > 0) {
+                previousState = player.steps[stepIndex - 1].state;
+            } else {
+                previousState = null;
+            }
+            
+            // Update options card
+            const currentStep = player.steps[stepIndex];
+            if (currentStep) {
+                updateOptionsCard(currentStep.state, currentStep);
+            }
+        });
+        player.setSteps(initialSteps);
+        
+        // Initialize options card
+        if (player.steps.length > 0) {
+            updateOptionsCard(player.steps[0].state, player.steps[0]);
+        }
+        
+        document.getElementById('btnRandom').addEventListener('click', () => {
+            generateRandomGraph();
+            previousState = null;
+            hoveredEdgeId = null;
+            // The steps are already updated and updateUI called inside generateRandomGraph
+        });
+    </script>
+</body>
+</html>

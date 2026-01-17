@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractional Knapsack - Greedy Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Fix body scrolling - must be fixed height */
+        body {
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Ensure main-grid has fixed height */
+        .main-grid {
+            height: calc(100vh - 60px);
+            max-height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        /* Left panel - independent scroll */
+        .control-panel {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+        }
+
+        /* Right panel - fixed container */
+        .viz-panel {
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Canvas container - fixed workspace, no scroll */
+        #canvas-container {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Pseudocode container - independent scroll if needed */
+        .pseudocode-container {
+            max-height: 60vh;
+            min-height: 150px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            /* Ensure it doesn't extend beyond viewport */
+            max-width: calc(100% - 40px);
+        }
+
+        /* Item Cards */
+        .item-card {
+            width: 90px;
+            height: 110px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            transition: all 0.5s ease;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .item-card .id { font-weight: bold; font-size: 1.1rem; margin-bottom: 4px; color: #fff; }
+        .item-card .detail { font-size: 0.75rem; color: #aaa; line-height: 1.4; }
+        .item-card .density-badge {
+            position: absolute;
+            top: -10px;
+            right: -5px;
+            background: var(--accent);
+            color: #000;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s ease;
+            white-space: nowrap;
+        }
+        
+        /* States */
+        .item-card.show-density .density-badge { opacity: 1; transform: scale(1); }
+        .item-card.highlight { 
+            border-color: var(--warning); 
+            box-shadow: 0 0 15px var(--warning); 
+            transform: translateY(-5px) scale(1.05); 
+            z-index: 10; 
+        }
+        .item-card.taken-full { 
+            background: rgba(0, 230, 118, 0.1); 
+            border-color: var(--success); 
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
+        }
+        .item-card.taken-fraction { 
+            background: rgba(41, 182, 246, 0.1); 
+            border-color: #29b6f6; 
+            box-shadow: 0 0 10px rgba(41, 182, 246, 0.3);
+        }
+        .item-card.not-taken { opacity: 0.5; }
+
+        /* Areas */
+        #items-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 140px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            align-content: center;
+            overflow: visible;
+        }
+
+        /* Knapsack Capacity Meter */
+        #knapsack-area {
+            position: absolute;
+            bottom: 40px;
+            left: 50px;
+            right: 50px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .capacity-bar-container {
+            width: 100%;
+            height: 50px;
+            background: #222;
+            border: 2px solid #555;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+        }
+
+        .capacity-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: width 0.8s ease-in-out;
+            border-right: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .capacity-label {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #ccc;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-label {
+            position: absolute;
+            color: #666;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* Custom scrollbar for independent scroll areas */
+        .control-panel::-webkit-scrollbar,
+        .pseudocode-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .control-panel::-webkit-scrollbar-track,
+        .pseudocode-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .control-panel::-webkit-scrollbar-thumb,
+        .pseudocode-container::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 3px;
+        }
+        .control-panel::-webkit-scrollbar-thumb:hover,
+        .pseudocode-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <a href="index.html">Chapter 5</a> &gt; <span>Fractional Knapsack</span>
+        </div>
+        <div class="page-title">Fractional Knapsack Problem</div>
+        <div></div>
+    </header>
+
+    <div class="main-grid">
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Problem</h3>
+                <p class="status-text" style="font-size: 0.9rem; min-height: auto;">
+                    We have <strong>items</strong>, each with a <strong>value</strong> ($v_i$) and <strong>weight</strong> ($w_i$).
+                    <br><br>
+                    <strong>Constraint:</strong> Knapsack capacity is <strong>W</strong>.
+                    <br><br>
+                    <strong>Feature:</strong> In Fractional Knapsack, we <strong>CAN</strong> take fractions of items (e.g., 50% of an item).
+                    <br><br>
+                    <strong>Greedy Strategy:</strong> 
+                    1. Compute <strong>density</strong> ($d_i = v_i / w_i$).<br>
+                    2. Sort items by density (descending).<br>
+                    3. Fill knapsack with highest density items first.
+                    <br><br>
+                    <em>Note: Greedy works optimally for Fractional Knapsack, but NOT for 0/1 Knapsack.</em>
+                </p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <button id="btnPrev" title="Previous Step">⏮</button>
+                    <button id="btnPlay" class="primary-btn">▶ Play</button>
+                    <button id="btnNext" title="Next Step">⏭</button>
+                    <button id="btnReset" title="Reset">↻</button>
+                    <button id="btnRandom" title="New Random Input">🎲</button>
+                </div>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedRange" min="100" max="1900" value="1000">
+                    <span>Fast</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Step</h3>
+                <div id="step-counter" style="margin-bottom: 5px; font-weight: bold; color: var(--accent);">0 / 0</div>
+                <p id="step-desc" class="status-text">Ready to start...</p>
+            </div>
+            
+            <div class="panel-section">
+                <h3>Stats</h3>
+                <div style="margin-bottom: 5px;">
+                    <span style="color: #aaa;">Knapsack Capacity (W):</span> <strong style="color: #fff;" id="stat-capacity">50</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Current Weight: <b id="stat-weight" style="color: var(--accent);">0</b></span>
+                    <span>Remaining: <b id="stat-remaining">50</b></span>
+                </div>
+                <div style="font-size: 1.1rem; border-top: 1px solid #444; padding-top: 5px; margin-top: 5px;">
+                    Total Value: <b id="stat-value" style="color: var(--success);">0</b>
+                </div>
+                <div id="selected-list" style="margin-top: 10px; font-size: 0.8rem; color: #888; max-height: 60px; overflow-y: auto; overscroll-behavior: contain;">
+                    <!-- Selected items list -->
+                </div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div id="canvas-container">
+                <div class="section-label" style="top: 10px; left: 20px;">Items Pool</div>
+                <div id="items-container"></div>
+                
+                <div id="knapsack-area">
+                    <div class="capacity-label" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Knapsack Capacity Meter</span>
+                        <span id="capacity-weight-label" style="color: var(--accent); font-weight: bold;">Weight = 0</span>
+                    </div>
+                    <div class="capacity-bar-container" id="capacity-bar">
+                        <!-- Fills injected here -->
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; color: #ccc; font-size: 0.9rem;">
+                        <span id="capacity-remaining-label">Remaining = 50</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pseudocode-container">
+                <div class="code-line" id="line-1">For each item i: density[i] = v[i] / w[i]</div>
+                <div class="code-line" id="line-2">Sort items by density in decreasing order</div>
+                <div class="code-line" id="line-3">remaining = W; total = 0</div>
+                <div class="code-line" id="line-4">For each item i in sorted items:</div>
+                <div class="code-line" id="line-5">  If w[i] <= remaining: take item fully; remaining -= w[i]</div>
+                <div class="code-line" id="line-6">  Else: take fraction f = remaining / w[i]; remaining = 0; break</div>
+                <div class="code-line" id="line-7">Return total value</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initial Data: Unsorted items with integer density ratios (V/W must be integer)
+        let ITEMS = [
+            { id: 'A', v: 60, w: 10 },   // 60/10 = 6
+            { id: 'B', v: 100, w: 20 },  // 100/20 = 5
+            { id: 'C', v: 120, w: 30 },  // 120/30 = 4
+            { id: 'D', v: 75, w: 15 },   // 75/15 = 5
+            { id: 'E', v: 32, w: 8 },    // 32/8 = 4
+            { id: 'F', v: 48, w: 12 }    // 48/12 = 4
+        ];
+        let CAPACITY = 50;
+
+        let player;
+        const itemsContainer = document.getElementById('items-container');
+        const capacityBar = document.getElementById('capacity-bar');
+        const statWeight = document.getElementById('stat-weight');
+        const statRemaining = document.getElementById('stat-remaining');
+        const statValue = document.getElementById('stat-value');
+        const statCapacity = document.getElementById('stat-capacity');
+        const selectedList = document.getElementById('selected-list');
+
+        // Density is now always an integer (V/W is always integer due to data generation)
+
+        function generateRandomInput() {
+            player.pause();
+            
+            // Generate random capacity
+            CAPACITY = Math.floor(Math.random() * 40) + 40; // 40-80
+            
+            const count = Math.floor(Math.random() * 3) + 5; // 5-8 items
+            const newItems = [];
+            const ids = "ABCDEFGH";
+            
+            for(let i=0; i<count; i++) {
+                // Generate weight first (5-30)
+                const w = Math.floor(Math.random() * 26) + 5;
+                // Generate integer density ratio (3-20) - ensures V/W is always integer
+                const densityRatio = Math.floor(Math.random() * 18) + 3;
+                // Calculate value as multiple of weight to ensure integer ratio
+                const v = w * densityRatio;
+                newItems.push({ id: ids[i], v: v, w: w });
+            }
+            ITEMS = newItems;
+            
+            const newSteps = generateSteps(ITEMS, CAPACITY);
+            player.setSteps(newSteps);
+            
+            // Force immediate update to ensure labels are synchronized
+            if(player.currentStep >= 0 && player.currentStep < player.steps.length) {
+                render(player.steps[player.currentStep].state);
+            }
+        }
+
+        function generateSteps(data, capacity) {
+            const steps = [];
+            
+            // Step 0: Initial State
+            // Clone data to avoid mutating original source
+            let items = data.map(i => ({ ...i, d: 0 })); 
+            
+            steps.push({
+                description: `Initial state. Capacity W = ${capacity}. Items unsorted.`,
+                codeLine: null,
+                state: { items: [...items], sorted: false, capacity: capacity, currentWeight: 0, currentValue: 0, bag: [], currentItem: null }
+            });
+
+            // Step 1: Calculate Densities (V/W is always integer due to data generation)
+            items = items.map(i => ({ ...i, d: Math.floor(i.v / i.w) }));
+            
+            steps.push({
+                description: "Calculate <strong>density</strong> ($d = v/w$) for all items.",
+                codeLine: 1,
+                state: { items: [...items], sorted: false, showDensity: true, capacity: capacity, currentWeight: 0, currentValue: 0, bag: [], currentItem: null }
+            });
+
+            // Step 2: Sort
+            items.sort((a, b) => b.d - a.d);
+            
+            steps.push({
+                description: "Sort items by <strong>density</strong> in decreasing order.",
+                codeLine: 2,
+                state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: 0, currentValue: 0, bag: [], currentItem: null }
+            });
+
+            // Algorithm Loop
+            let currentWeight = 0;
+            let currentValue = 0;
+            let bag = [];
+            let remaining = capacity;
+
+            steps.push({
+                description: "Initialize variables: remaining = W, total = 0.",
+                codeLine: 3,
+                state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: 0, currentValue: 0, bag: [], currentItem: null }
+            });
+
+            for(let i = 0; i < items.length; i++) {
+                const item = items[i];
+                
+                // Consideration Step
+                const densityInt = Math.floor(item.v / item.w); // Integer density
+                steps.push({
+                    description: `Consider Item <strong>${item.id}</strong> (Density: ${densityInt}). Weight: ${item.w}. <br>Remaining Capacity: ${remaining}.`,
+                    codeLine: 4,
+                    state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: currentWeight, currentValue: currentValue, bag: [...bag], currentItem: item.id }
+                });
+
+                if (remaining === 0) {
+                     steps.push({
+                        description: `Knapsack is full. Cannot take Item <strong>${item.id}</strong>.`,
+                        codeLine: 6,
+                        state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: currentWeight, currentValue: currentValue, bag: [...bag], currentItem: item.id, rejected: true }
+                    });
+                    continue;
+                }
+
+                if (item.w <= remaining) {
+                    // Take Full
+                    currentWeight += item.w;
+                    currentValue += item.v;
+                    remaining -= item.w;
+                    
+                    bag.push({ ...item, taken: item.w, fraction: 1 });
+                    
+                    steps.push({
+                        description: `Item <strong>${item.id}</strong> fits fully (${item.w} <= ${remaining + item.w}). <span style='color:var(--success)'>Take 100%</span>.`,
+                        codeLine: 5,
+                        state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: currentWeight, currentValue: currentValue, bag: [...bag], currentItem: item.id }
+                    });
+                } else {
+                    // Take Fraction
+                    const takeWeight = remaining;
+                    const fraction = remaining / item.w;
+                    const valAdded = item.v * fraction;
+                    
+                    currentWeight += takeWeight;
+                    currentValue += valAdded;
+                    remaining = 0;
+                    
+                    bag.push({ ...item, taken: takeWeight, fraction: fraction });
+                    
+                    steps.push({
+                        description: `Item <strong>${item.id}</strong> too large (${item.w} > ${remaining + takeWeight}). <span style='color:#29b6f6'>Take ${(fraction*100).toFixed(1)}%</span> to fill remaining space.`,
+                        codeLine: 6,
+                        state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: currentWeight, currentValue: currentValue, bag: [...bag], currentItem: item.id }
+                    });
+                    
+                    // Break after filling
+                    break;
+                }
+            }
+
+            steps.push({
+                description: `Finished! Total Value: <strong>${currentValue.toFixed(2)}</strong>. Knapsack Full.`,
+                codeLine: 7,
+                state: { items: [...items], sorted: true, showDensity: true, capacity: capacity, currentWeight: currentWeight, currentValue: currentValue, bag: [...bag], currentItem: null, finished: true }
+            });
+
+            return steps;
+        }
+
+        function render(state) {
+            // Calculate remaining once for consistency
+            const remaining = (state.capacity || CAPACITY) - (state.currentWeight || 0);
+            const currentWeight = state.currentWeight || 0;
+            const currentValue = state.currentValue || 0;
+            const capacity = state.capacity || CAPACITY;
+            
+            // Stats - ensure all use same values
+            statCapacity.innerText = capacity;
+            statWeight.innerText = currentWeight.toFixed(1);
+            statRemaining.innerText = remaining.toFixed(1);
+            statValue.innerText = currentValue.toFixed(2);
+            
+            // Update capacity meter labels - use same calculated values
+            const capacityWeightLabel = document.getElementById('capacity-weight-label');
+            const capacityRemainingLabel = document.getElementById('capacity-remaining-label');
+            if(capacityWeightLabel) {
+                capacityWeightLabel.textContent = `Weight = ${currentWeight.toFixed(1)}`;
+            }
+            if(capacityRemainingLabel) {
+                capacityRemainingLabel.textContent = `Remaining = ${remaining.toFixed(1)}`;
+            }
+            
+            // Selected List String
+            const listStr = state.bag.map(i => `<b>${i.id}</b> (${(i.fraction*100).toFixed(0)}%)`).join(', ');
+            selectedList.innerHTML = listStr || "None";
+
+            // Render Items
+            itemsContainer.innerHTML = '';
+            state.items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                if(state.showDensity) card.classList.add('show-density');
+                
+                // Content - Display density as integer (V/W is always integer)
+                const densityInt = Math.floor(item.v / item.w); // Should already be integer, but ensure it
+                card.innerHTML = `
+                    <div class="density-badge">d=${densityInt}</div>
+                    <div class="id">${item.id}</div>
+                    <div class="detail">V: ${item.v}</div>
+                    <div class="detail">W: ${item.w}</div>
+                `;
+
+                // Highlight/Status
+                if(state.currentItem === item.id && !state.finished) {
+                    card.classList.add('highlight');
+                }
+                
+                const inBag = state.bag.find(b => b.id === item.id);
+                if(inBag) {
+                    if(inBag.fraction === 1) card.classList.add('taken-full');
+                    else card.classList.add('taken-fraction');
+                } else if (state.currentItem !== item.id && (state.finished || state.rejected)) {
+                     // Check if passed/ignored - simplified logic: if we have bag items, later items are ignored
+                     // Only visually dim if specifically rejected or loop done
+                     // card.classList.add('not-taken');
+                }
+                
+                itemsContainer.appendChild(card);
+            });
+
+            // Render Capacity Bar
+            capacityBar.innerHTML = '';
+            
+            state.bag.forEach(item => {
+                const segment = document.createElement('div');
+                segment.className = 'capacity-fill';
+                
+                // Width % based on TOTAL capacity
+                const widthPct = (item.taken / state.capacity) * 100;
+                segment.style.width = widthPct + '%';
+                
+                // Color
+                if(item.fraction === 1) {
+                    segment.style.backgroundColor = 'var(--success)';
+                } else {
+                    segment.style.backgroundColor = '#29b6f6'; // Light blue for fraction
+                }
+                
+                segment.innerHTML = item.id;
+                segment.title = `${item.id}: ${item.taken.toFixed(1)} weight`;
+                
+                capacityBar.appendChild(segment);
+            });
+        }
+
+        // Init
+        const steps = generateSteps(ITEMS, CAPACITY);
+        player = new StepPlayer(render, null);
+        player.setSteps(steps);
+
+        document.getElementById('btnRandom').addEventListener('click', generateRandomInput);
+        window.addEventListener('resize', () => player.updateUI());
+
+    </script>
+</body>
+</html>

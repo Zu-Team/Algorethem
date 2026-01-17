@@ -1,0 +1,230 @@
+# Job Scheduling Problem - Algorithm Documentation
+
+## Overview
+
+The **Job Scheduling Problem** (also known as the "Job Sequencing with Deadlines") is a classic greedy algorithm problem that aims to maximize total profit by scheduling jobs within their deadlines.
+
+## Problem Statement
+
+**Input:**
+- A set of jobs, each with:
+  - Job ID
+  - Deadline (integer, representing the latest time slot by which the job must be completed)
+  - Profit (value gained if the job is completed by its deadline)
+
+**Constraint:**
+- Each job takes exactly 1 unit of time to complete
+- Only one job can be scheduled per time slot
+- A job must be completed by its deadline to earn its profit
+
+**Goal:**
+- Maximize the total profit by selecting and scheduling jobs optimally
+
+## Algorithm Strategy (Greedy Approach)
+
+The greedy algorithm for job scheduling follows these steps:
+
+1. **Sort jobs by profit in descending order** (highest profit first)
+2. **Initialize empty time slots** (slots represent time 1, 2, 3, ..., max_deadline)
+3. **For each job in sorted order:**
+   - Try to place the job in the latest available time slot that is:
+     - Before or at the job's deadline
+     - Currently empty
+   - If such a slot is found, assign the job and add its profit to total
+   - If no slot is available before the deadline, skip the job
+
+## Algorithm Pseudocode
+
+```
+1. Sort all jobs in decreasing order of profit
+2. Initialize result slots as empty (array of size max_deadline)
+3. For each job J in sorted jobs:
+     a. Find the latest available slot i such that:
+        - i <= min(J.deadline, max_slots)
+        - slot[i] is empty
+     b. Loop backwards from min(deadline, max) down to 1:
+        - If slot[i] is empty:
+            * Assign J to slot[i]
+            * Add J.profit to total_profit
+            * Break
+     c. If no slot found, job is discarded (no profit)
+4. Return total_profit and scheduled jobs
+```
+
+## Visualization Features
+
+The interactive visualization demonstrates:
+
+### Visual Elements
+
+1. **Job Pool (Top Area)**
+   - Displays all jobs sorted by profit (descending)
+   - Each job card shows: Job ID, Profit (P), Deadline (D)
+   - Highlighted jobs are currently being considered
+   - Green cards indicate successfully placed jobs
+   - Red/grayed cards indicate rejected jobs
+
+2. **Timeline Slots (Bottom Area)**
+   - Shows time slots from 1 to max_deadline
+   - Each slot can hold one job
+   - Empty slots are shown as dashed outlines
+   - Filled slots show the assigned job card
+   - Yellow glow indicates the slot currently being checked
+
+3. **Statistics Panel**
+   - **Total Profit**: Running sum of profits from scheduled jobs
+   - Updates in real-time as jobs are placed
+
+### Animation Steps
+
+1. **Initialization Step**
+   - Jobs are sorted by profit
+   - All time slots are empty
+   - Total profit = 0
+
+2. **Job Consideration**
+   - Current job is highlighted
+   - Job details are shown
+
+3. **Slot Checking**
+   - Algorithm checks slots from deadline backwards to 1
+   - Currently checked slot is highlighted with yellow glow
+
+4. **Job Placement**
+   - If slot is found: Job card moves to slot, turns green
+   - Profit is added to total
+   - Job is removed from pool
+
+5. **Job Rejection**
+   - If no slot found: Job turns red/gray
+   - Job remains in pool (not scheduled)
+   - No profit is added
+
+## Implementation Details
+
+### File Structure
+
+- **HTML**: `job-scheduling.html`
+- **CSS**: `styles.css` (shared with other algorithms)
+- **JavaScript**: 
+  - `script.js` (shared StepPlayer class)
+  - Inline script in `job-scheduling.html`
+
+### Key Data Structures
+
+```javascript
+// Job representation
+{
+    id: 'J1',        // Job identifier
+    deadline: 2,     // Latest time slot (1-indexed)
+    profit: 100      // Profit value
+}
+
+// State representation
+{
+    jobs: [...],           // Array of sorted jobs
+    slots: [...],          // Array of slot assignments (job IDs or null)
+    currentJob: 'J2',      // Currently considered job ID
+    checkingSlot: 1,       // Currently checked slot index (0-indexed)
+    profit: 150            // Total profit accumulated
+}
+```
+
+### Step Generation
+
+The `generateSteps()` function creates a sequence of algorithm states:
+
+1. **Sort step**: Initialize with sorted jobs, empty slots
+2. **For each job**:
+   - Consideration step
+   - Slot checking steps (backwards from deadline)
+   - Placement step (if slot found)
+   - Rejection step (if no slot found)
+3. **Completion step**: Final state with total profit
+
+### Random Input Generation
+
+The `generateRandomInput()` function creates dynamic test cases:
+
+- **Job count**: Random between 5-8 jobs
+- **Profit**: Random between 10-99
+- **Deadline**: Random between 1-4
+
+This allows testing the algorithm with varied inputs to study different scenarios.
+
+## Complexity Analysis
+
+- **Time Complexity**: O(n log n + n * m)
+  - O(n log n) for sorting jobs by profit
+  - O(n * m) for scheduling, where n = number of jobs, m = max deadline
+  - In practice, m is usually small, so it's approximately O(n log n)
+
+- **Space Complexity**: O(n + m)
+  - O(n) for storing jobs
+  - O(m) for storing slot assignments
+
+## Why Greedy Works
+
+The greedy strategy (choosing highest profit jobs first) is optimal because:
+
+1. **Optimal Substructure**: If we can schedule a high-profit job, we should do so
+2. **Greedy Choice Property**: Choosing the highest profit job at each step leads to optimal solution
+3. **Proof Sketch**: Any schedule can be transformed to use highest-profit jobs first without decreasing total profit
+
+## Interactive Controls
+
+- **⏮ Previous Step**: Go back one step
+- **▶ Play**: Auto-play through all steps
+- **⏭ Next Step**: Advance one step
+- **↻ Reset**: Return to step 0
+- **🎲 Generate Random Input**: Create new random test case
+- **Speed Slider**: Adjust animation speed (Slow to Fast)
+
+## Usage Tips
+
+1. **Start with Play**: Click "Play" to see the complete algorithm execution
+2. **Step-by-step**: Use Previous/Next to understand each decision point
+3. **Random Inputs**: Generate different scenarios to see how the algorithm handles various cases
+4. **Watch the Profit**: Observe how total profit increases as jobs are placed
+5. **Study Rejections**: Notice why some jobs are rejected (no available slots before deadline)
+
+## Example Walkthrough
+
+**Input:**
+- J1: deadline=2, profit=100
+- J2: deadline=1, profit=19
+- J3: deadline=2, profit=27
+- J4: deadline=1, profit=25
+- J5: deadline=3, profit=15
+
+**Sorted by profit (descending):** J1(100), J3(27), J4(25), J5(15), J2(19)
+
+**Execution:**
+1. J1 (deadline=2): Place in slot 2 → Profit = 100
+2. J3 (deadline=2): Slot 2 taken, slot 1 available → Place in slot 1 → Profit = 127
+3. J4 (deadline=1): Slot 1 taken, no other slot before deadline 1 → Reject
+4. J5 (deadline=3): Place in slot 3 → Profit = 142
+5. J2 (deadline=1): Slot 1 taken → Reject
+
+**Result:** Total Profit = 142, Jobs scheduled: J1 (slot 2), J3 (slot 1), J5 (slot 3)
+
+## Extensions and Variations
+
+1. **Weighted Job Scheduling**: Jobs have different durations (not just 1 unit)
+2. **Precedence Constraints**: Some jobs must complete before others
+3. **Multiple Machines**: Schedule jobs across multiple processors
+4. **Release Times**: Jobs become available at specific times
+
+## References
+
+- Classic greedy algorithm from algorithm design textbooks
+- Used in operating systems for CPU scheduling
+- Basis for more complex scheduling problems
+
+---
+
+**Visualization Version**: 1.0  
+**Last Updated**: 2026-01-10  
+**Algorithm Type**: Greedy Algorithm  
+**Difficulty**: Medium
+

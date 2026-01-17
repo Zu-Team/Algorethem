@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFS - Graph Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .stack-display {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .stack-item {
+            width: 100%;
+            padding: 8px;
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid var(--primary);
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .stack-item:hover {
+            background: rgba(33, 150, 243, 0.3);
+            transform: translateX(-2px);
+        }
+        .stack-label {
+            position: absolute;
+            bottom: 100%;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--accent);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <a href="index.html">Chapter 6</a> &gt; <span>DFS</span>
+        </div>
+        <div class="page-title">Depth-First Search</div>
+        <div></div>
+    </header>
+
+    <div class="main-grid">
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Problem</h3>
+                <p class="status-text" style="font-size: 0.9rem; min-height: auto;">
+                    Traverse deeper into the graph whenever possible.
+                    <br><br>
+                    <strong>Timestamps:</strong><br>
+                    <span style="color:#00bcd4">d[u]</span>: Discovery time<br>
+                    <span style="color:#00e676">f[u]</span>: Finish time
+                </p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <button id="btnPrev">⏮</button>
+                    <button id="btnPlay" class="primary-btn">▶ Play</button>
+                    <button id="btnNext">⏭</button>
+                    <button id="btnReset">↻</button>
+                    <button id="btnRandom" title="New Random Graph">🎲</button>
+                    <button id="btnSpanTree" title="Generate Spanning Tree">🌳</button>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; margin-top:10px; font-size:0.85rem; color:var(--text-mute);">
+                    <span>Start:</span>
+                    <select id="startSelect" style="background:#2a2a2a; border:1px solid #444; color:var(--text-main); padding:6px 8px; border-radius:6px; font-size:0.85rem;"></select>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-top:10px; font-size:0.85rem; color:var(--text-mute);">
+                    <span>Graph:</span>
+                    <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
+                        <input type="radio" name="graphMode" id="modeDirected" value="directed" checked>
+                        <span>Directed</span>
+                    </label>
+                    <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
+                        <input type="radio" name="graphMode" id="modeUndirected" value="undirected">
+                        <span>Undirected</span>
+                    </label>
+                </div>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedRange" min="100" max="1900" value="1000">
+                    <span>Fast</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Step</h3>
+                <div id="step-counter" style="margin-bottom: 5px; font-weight: bold; color: var(--accent);">0 / 0</div>
+                <p id="step-desc" class="status-text">Ready...</p>
+            </div>
+            
+
+            <div class="panel-section">
+                <h3>Results (color / d / f / p)</h3>
+                <div id="results-table" style="font-family: var(--font-mono); font-size: 0.8rem;"></div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div id="canvas-container">
+                <!-- SVG Here -->
+                <div class="stack-display" id="stack-visuals">
+                    <div class="stack-label">Recursion Stack</div>
+                    <!-- Items -->
+                </div>
+            </div>
+            
+            <div class="pseudocode-container">
+                <div class="code-line" id="line-1"><strong>DFS(G):</strong></div>
+                <div class="code-line" id="line-2">1&nbsp;&nbsp;for each vertex u in G.V</div>
+                <div class="code-line" id="line-3">2&nbsp;&nbsp;&nbsp;&nbsp;color[u] = WHITE</div>
+                <div class="code-line" id="line-4">3&nbsp;&nbsp;&nbsp;&nbsp;p[u] = NIL</div>
+                <div class="code-line" id="line-5">4&nbsp;&nbsp;time = 0</div>
+                <div class="code-line" id="line-6">5&nbsp;&nbsp;for each vertex u in G.V</div>
+                <div class="code-line" id="line-7">6&nbsp;&nbsp;&nbsp;&nbsp;if color[u] == WHITE</div>
+                <div class="code-line" id="line-8">7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DFS-Visit(u)</div>
+                <div style="height:8px;"></div>
+                <div class="code-line" id="line-9"><strong>DFS-Visit(u):</strong></div>
+                <div class="code-line" id="line-10">1&nbsp;&nbsp;time = time + 1</div>
+                <div class="code-line" id="line-11">2&nbsp;&nbsp;d[u] = time</div>
+                <div class="code-line" id="line-12">3&nbsp;&nbsp;color[u] = GRAY</div>
+                <div class="code-line" id="line-13">4&nbsp;&nbsp;for each v in Adj[u]</div>
+                <div class="code-line" id="line-14">5&nbsp;&nbsp;&nbsp;&nbsp;if color[v] == WHITE</div>
+                <div class="code-line" id="line-15">6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p[v] = u</div>
+                <div class="code-line" id="line-16">7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DFS-Visit(v)</div>
+                <div class="code-line" id="line-17">8&nbsp;&nbsp;color[u] = BLACK</div>
+                <div class="code-line" id="line-18">9&nbsp;&nbsp;time = time + 1</div>
+                <div class="code-line" id="line-19">10&nbsp;f[u] = time</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initial Graph Data (Mutable)
+        let NODES = [
+            { id: '1', x: 100, y: 100 },
+            { id: '2', x: 100, y: 300 },
+            { id: '3', x: 250, y: 200 },
+            { id: '4', x: 400, y: 200 },
+            { id: '5', x: 100, y: 200 },
+            { id: '6', x: 250, y: 100 },
+            { id: '7', x: 250, y: 300 } 
+        ];
+
+        let EDGES = [
+            { src: '1', dest: '2' },
+            { src: '1', dest: '3' },
+            { src: '2', dest: '3' },
+            { src: '3', dest: '4' },
+            { src: '4', dest: '2' },
+            { src: '5', dest: '6' },
+            { src: '6', dest: '4' }
+        ];
+
+        // Graph mode toggle (directed / undirected)
+        let GRAPH_MODE = 'directed';
+        let START_NODE = null;
+
+        // Build adjacency list once (preserve insertion order, DO NOT sort)
+        function buildAdjacency(nodes, edges, mode) {
+            const adj = new Map();
+            nodes.forEach(n => adj.set(n.id, []));
+
+            edges.forEach(e => {
+                if (adj.has(e.src)) adj.get(e.src).push(e.dest);
+                if (mode === 'undirected') {
+                    if (adj.has(e.dest)) adj.get(e.dest).push(e.src);
+                }
+            });
+            return adj;
+        }
+
+        function getNeighborsFromAdj(adj, uId) {
+            return adj.get(uId) ? [...adj.get(uId)] : [];
+        }
+
+        // Random Graph Generator
+        function generateRandomGraph() {
+            const numNodes = Math.floor(Math.random() * 3) + 5; // 5 to 7 nodes
+            const newNodes = [];
+            const newEdges = [];
+            const width = 600;
+            const height = 350;
+            const margin = 50;
+
+            // Generate Nodes
+            for(let i=0; i<numNodes; i++) {
+                let node = { id: (i+1).toString(), x: 0, y: 0 };
+                let safe = false;
+                let attempts = 0;
+                
+                while(!safe && attempts < 100) {
+                    node.x = margin + Math.random() * (width - 2*margin);
+                    node.y = margin + Math.random() * (height - 2*margin);
+                    
+                    // Check overlap
+                    safe = true;
+                    for(let other of newNodes) {
+                        const dist = Math.hypot(node.x - other.x, node.y - other.y);
+                        if(dist < 80) { safe = false; break; }
+                    }
+                    attempts++;
+                }
+                newNodes.push(node);
+            }
+
+            // First, ensure connectivity: create a path/spanning tree that connects all nodes
+            const edgeSet = new Set();
+            
+            if (GRAPH_MODE === 'directed') {
+                // For directed: create a path that visits all nodes (ensures reachability)
+                // Create a chain: 0->1->2->...->n-1, then add a cycle back to start
+                for(let i=0; i<numNodes-1; i++) {
+                    const edgeKey = `${newNodes[i].id}-${newNodes[i+1].id}`;
+                    if(!edgeSet.has(edgeKey)) {
+                        edgeSet.add(edgeKey);
+                        newEdges.push({ src: newNodes[i].id, dest: newNodes[i+1].id });
+                    }
+                }
+                // Add cycle back to ensure all nodes are in one component
+                if(numNodes > 1) {
+                    const cycleKey = `${newNodes[numNodes-1].id}-${newNodes[0].id}`;
+                    if(!edgeSet.has(cycleKey)) {
+                        edgeSet.add(cycleKey);
+                        newEdges.push({ src: newNodes[numNodes-1].id, dest: newNodes[0].id });
+                    }
+                }
+                
+                // Then add a VERY LIMITED number of random edges (preserve insertion order)
+                // Target: sparse graph with 0-2 additional edges beyond the cycle (randomly chosen)
+                const maxExtraEdges = Math.floor(Math.random() * 3); // 0, 1, or 2 extra edges
+                
+                if(maxExtraEdges > 0) {
+                    // Collect all possible pairs that are NOT in the cycle
+                    const allPairs = [];
+                    for(let i=0; i<numNodes; i++) {
+                        for(let j=0; j<numNodes; j++) {
+                            if(i === j) continue;
+                            const edgeKey = `${newNodes[i].id}-${newNodes[j].id}`;
+                            if(!edgeSet.has(edgeKey)) {
+                                allPairs.push({ src: newNodes[i].id, dest: newNodes[j].id, key: edgeKey });
+                            }
+                        }
+                    }
+                    
+                    // Shuffle array to randomize selection
+                    for(let i = allPairs.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [allPairs[i], allPairs[j]] = [allPairs[j], allPairs[i]];
+                    }
+                    
+                    // Add exactly maxExtraEdges (0-2)
+                    for(let k = 0; k < Math.min(maxExtraEdges, allPairs.length); k++) {
+                        const pair = allPairs[k];
+                        edgeSet.add(pair.key);
+                        newEdges.push({ src: pair.src, dest: pair.dest });
+                    }
+                }
+            } else {
+                // Undirected: create a spanning tree first (ensures connectivity)
+                // Create a chain: 0-1-2-...-n-1
+                for(let i=0; i<numNodes-1; i++) {
+                    const edgeKey = `${newNodes[i].id}-${newNodes[i+1].id}`;
+                    if(!edgeSet.has(edgeKey)) {
+                        edgeSet.add(edgeKey);
+                        newEdges.push({ src: newNodes[i].id, dest: newNodes[i+1].id });
+                    }
+                }
+                
+                // Then add a VERY LIMITED number of random edges (preserve insertion order)
+                // Target: sparse graph with 0-2 additional edges beyond the tree (randomly chosen)
+                const maxExtraEdges = Math.floor(Math.random() * 3); // 0, 1, or 2 extra edges
+                
+                if(maxExtraEdges > 0) {
+                    // Collect all possible pairs that are NOT in the spanning tree
+                    const allPairs = [];
+                    for(let i=0; i<numNodes; i++) {
+                        for(let j=i+1; j<numNodes; j++) {
+                            const edgeKey = `${newNodes[i].id}-${newNodes[j].id}`;
+                            if(!edgeSet.has(edgeKey)) {
+                                allPairs.push({ src: newNodes[i].id, dest: newNodes[j].id, key: edgeKey });
+                            }
+                        }
+                    }
+                    
+                    // Shuffle array to randomize selection
+                    for(let i = allPairs.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [allPairs[i], allPairs[j]] = [allPairs[j], allPairs[i]];
+                    }
+                    
+                    // Add exactly maxExtraEdges (0-2)
+                    for(let k = 0; k < Math.min(maxExtraEdges, allPairs.length); k++) {
+                        const pair = allPairs[k];
+                        edgeSet.add(pair.key);
+                        newEdges.push({ src: pair.src, dest: pair.dest });
+                    }
+                }
+            }
+
+            NODES = newNodes;
+            EDGES = newEdges;
+
+            // Sync start dropdown
+            syncStartDropdown();
+            if (!START_NODE) START_NODE = NODES[0].id;
+
+            // Reset Player
+            const steps = generateSteps();
+            player.setSteps(steps);
+        }
+
+        // Spanning Tree Generator
+        function generateSpanningTree() {
+            const numNodes = Math.floor(Math.random() * 3) + 5; // 5 to 7 nodes
+            const newNodes = [];
+            const newEdges = [];
+            const width = 600;
+            const height = 350;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35;
+
+            // Generate Nodes (Circular layout)
+            for(let i=0; i<numNodes; i++) {
+                const angle = (2 * Math.PI * i) / numNodes;
+                newNodes.push({
+                    id: (i+1).toString(),
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                });
+            }
+
+            // Create a random tree structure (Randomized Prim's-like approach)
+            const connected = [ newNodes[0] ];
+            const unconnected = newNodes.slice(1);
+            
+            // While there are unconnected nodes
+            while(unconnected.length > 0) {
+                // Pick a random node from connected set
+                const uIndex = Math.floor(Math.random() * connected.length);
+                const u = connected[uIndex];
+                
+                // Pick a random node from unconnected set
+                const vIndex = Math.floor(Math.random() * unconnected.length);
+                const v = unconnected[vIndex];
+                
+                // Add edge
+                newEdges.push({ src: u.id, dest: v.id });
+                
+                // Move v from unconnected to connected
+                connected.push(v);
+                unconnected.splice(vIndex, 1);
+            }
+
+            NODES = newNodes;
+            EDGES = newEdges;
+
+            // Sync start dropdown
+            syncStartDropdown();
+            if (!START_NODE) START_NODE = NODES[0].id;
+
+            // Reset Player
+            const steps = generateSteps();
+            player.setSteps(steps);
+        }
+
+        // Drag & Drop Logic
+        let isDragging = false;
+        let draggedNodeId = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function handleMouseDown(e, nodeId) {
+            if (e.button !== 0) return; // Only Left Click
+
+            isDragging = true;
+            draggedNodeId = nodeId;
+            e.stopPropagation(); 
+            e.preventDefault(); // Prevent text selection start
+
+            // Calculate offset
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const node = NODES.find(n => n.id === nodeId);
+            if(node) {
+                dragOffsetX = mouseX - node.x;
+                dragOffsetY = mouseY - node.y;
+            }
+
+            document.body.style.cursor = 'grabbing';
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggedNodeId) return;
+
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Apply offset
+            const node = NODES.find(n => n.id === draggedNodeId);
+            if (node) {
+                let newX = x - dragOffsetX;
+                let newY = y - dragOffsetY;
+
+                // Clamp
+                newX = Math.max(25, Math.min(rect.width - 25, newX));
+                newY = Math.max(25, Math.min(rect.height - 25, newY));
+
+                node.x = newX;
+                node.y = newY;
+                
+                player.updateUI(); // Re-render
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if(isDragging) {
+                isDragging = false;
+                draggedNodeId = null;
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        let player;
+        const container = document.getElementById('canvas-container');
+        const stackDiv = document.getElementById('stack-visuals');
+        const resultsEl = document.getElementById('results-table');
+        const startSelect = document.getElementById('startSelect');
+
+        function syncStartDropdown() {
+            if (!startSelect) return;
+            const ids = NODES.map(n => n.id);
+            startSelect.innerHTML = '';
+            ids.forEach(id => {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = id;
+                startSelect.appendChild(opt);
+            });
+            if (START_NODE && ids.includes(START_NODE)) startSelect.value = START_NODE;
+            else if (ids.length > 0) {
+                startSelect.value = ids[0];
+                START_NODE = ids[0];
+            }
+        }
+
+        function generateSteps() {
+            let steps = [];
+            let color = {};
+            let d = {};
+            let f = {};
+            let p = {};
+            let time = 0;
+            let stack = [];
+
+            const adj = buildAdjacency(NODES, EDGES, GRAPH_MODE);
+            
+            NODES.forEach(n => {
+                color[n.id] = 'WHITE';
+                d[n.id] = 0;
+                f[n.id] = 0;
+                p[n.id] = null;
+            });
+
+            steps.push({
+                description: "Initialize: for each vertex u set color[u]=WHITE and p[u]=NIL.",
+                codeLine: 2,
+                state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: null, checking: null, mode: GRAPH_MODE }
+            });
+
+            steps.push({
+                description: "Set time = 0.",
+                codeLine: 5,
+                state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: null, checking: null, mode: GRAPH_MODE }
+            });
+
+            // Recursive DFS Simulation
+            function DFS_Visit(u) {
+                stack.push(u);
+                time++;
+                d[u] = time;
+                color[u] = 'GRAY';
+
+                steps.push({
+                    description: `DFS-Visit(${u}): time=time+1; d[${u}]=${time}; color[${u}]=GRAY.`,
+                    codeLine: 10,
+                    state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: null, mode: GRAPH_MODE }
+                });
+
+                const neighbors = getNeighborsFromAdj(adj, u);
+                for(let v of neighbors) {
+                    steps.push({
+                        description: `For v in Adj[${u}]: consider neighbor <strong>${v}</strong>.`,
+                        codeLine: 13,
+                        state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: v, mode: GRAPH_MODE }
+                    });
+
+                    steps.push({
+                        description: `Check if color[${v}] == WHITE.`,
+                        codeLine: 14,
+                        state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: v, mode: GRAPH_MODE }
+                    });
+
+                    if(color[v] === 'WHITE') {
+                        // Set parent exactly when discovering WHITE neighbor (chapter behavior)
+                        p[v] = u;
+
+                        steps.push({
+                            description: `${v} is WHITE → set p[${v}] = ${u}.`,
+                            codeLine: 15,
+                            state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: v, mode: GRAPH_MODE }
+                        });
+
+                        steps.push({
+                            description: `Call DFS-Visit(${v}).`,
+                            codeLine: 16,
+                            state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: v, mode: GRAPH_MODE }
+                        });
+                        DFS_Visit(v);
+                        
+                        // After return
+                        steps.push({
+                            description: `Return to DFS-Visit(${u}) after finishing ${v}.`,
+                            codeLine: 13,
+                            state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: null, mode: GRAPH_MODE }
+                        });
+                    }
+                }
+
+                color[u] = 'BLACK';
+                time++;
+                f[u] = time;
+                stack.pop();
+
+                steps.push({
+                    description: `Finish ${u}: color[${u}]=BLACK; time=time+1; f[${u}]=${time}.`,
+                    codeLine: 17,
+                    state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: u, checking: null, mode: GRAPH_MODE }
+                });
+            }
+
+            // Main Loop
+            // Prioritize START_NODE to match user intent (start DFS from here)
+            let sortedNodes = [...NODES];
+            if (START_NODE) {
+                sortedNodes.sort((a, b) => {
+                    if (a.id === START_NODE) return -1;
+                    if (b.id === START_NODE) return 1;
+                    return 0; // Keep original order otherwise (or by ID)
+                });
+            }
+
+            for (let n of sortedNodes) {
+                steps.push({
+                    description: `Check if color[${n.id}] == WHITE (DFS forest loop).`,
+                    codeLine: 7,
+                    state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: null, checking: n.id, mode: GRAPH_MODE }
+                });
+
+                if (color[n.id] === 'WHITE') {
+                    steps.push({
+                        description: `color[${n.id}] is WHITE → start new DFS tree at ${n.id}.`,
+                        codeLine: 8,
+                        state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: null, checking: n.id, mode: GRAPH_MODE }
+                    });
+                    DFS_Visit(n.id);
+                }
+            }
+
+            steps.push({
+                description: "DFS Complete.",
+                codeLine: null,
+                state: { color: {...color}, d: {...d}, f: {...f}, p: {...p}, time, stack: [...stack], current: null, checking: null, mode: GRAPH_MODE }
+            });
+
+            return steps;
+        }
+
+        function render(state) {
+            // Stack
+            stackDiv.innerHTML = '<div class="stack-label">Recursion Stack</div>';
+            state.stack.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'stack-item';
+                el.innerText = `DFS(${item})`;
+                stackDiv.appendChild(el);
+            });
+
+            // Graph
+            const oldSvg = container.querySelector('svg');
+            if(oldSvg) oldSvg.remove();
+            const svg = createSVGElement('svg', { width: '100%', height: '100%', style: 'position:absolute; top:0; left:0; z-index:0;' });
+
+            // Results table - Improved styling like Chapter 5
+            if (resultsEl) {
+                const rows = NODES.map(n => n.id).sort();
+                let html = '<table style="width:100%; border-collapse:collapse; color: var(--text-main);">';
+                html += '<thead><tr style="background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid var(--border-color);">';
+                html += '<th style="text-align:left; padding:6px 8px; font-weight:600; color: var(--text-mute);">u</th>';
+                html += '<th style="padding:6px 8px; font-weight:600; color: var(--text-mute);">color</th>';
+                html += '<th style="padding:6px 8px; font-weight:600; color: var(--text-mute);">d</th>';
+                html += '<th style="padding:6px 8px; font-weight:600; color: var(--text-mute);">f</th>';
+                html += '<th style="padding:6px 8px; font-weight:600; color: var(--text-mute);">p</th>';
+                html += '</tr></thead><tbody>';
+                
+                rows.forEach(id => {
+                    const col = state.color[id] || 'WHITE';
+                    const dVal = state.d[id] || 0;
+                    const fVal = state.f[id] || 0;
+                    const pVal = state.p ? (state.p[id] === null ? 'NIL' : state.p[id]) : 'NIL';
+                    
+                    // Highlight current vertex
+                    const isCurrent = state.current === id;
+                    const rowStyle = isCurrent ? 'background: rgba(255, 234, 0, 0.15);' : '';
+                    
+                    html += `<tr style="${rowStyle} border-bottom: 1px solid rgba(255,255,255,0.05);">`;
+                    html += `<td style="padding:6px 8px; text-align:left; font-weight:700; color: var(--accent);">${id}</td>`;
+                    html += `<td style="padding:6px 8px;">${col}</td>`;
+                    html += `<td style="padding:6px 8px; color:#00bcd4; font-weight:${dVal > 0 ? 'bold' : 'normal'};">${dVal > 0 ? dVal : ''}</td>`;
+                    html += `<td style="padding:6px 8px; color:#00e676; font-weight:${fVal > 0 ? 'bold' : 'normal'};">${fVal > 0 ? fVal : ''}</td>`;
+                    html += `<td style="padding:6px 8px; color:${pVal === 'NIL' ? 'var(--text-mute)' : 'var(--text-main)'};">${pVal}</td>`;
+                    html += `</tr>`;
+                });
+                html += '</tbody></table>';
+                resultsEl.innerHTML = html;
+            }
+
+            // Edges (directed/undirected) - Improved styling like Chapter 5
+            const defs = createSVGElement('defs', {});
+            const marker = createSVGElement('marker', {
+                id: 'arrow', markerWidth: 10, markerHeight: 10, refX: 9, refY: 3, orient: 'auto'
+            });
+            const path = createSVGElement('path', { d: 'M0,0 L0,6 L9,3 z', fill: '#666' });
+            marker.appendChild(path);
+            defs.appendChild(marker);
+            svg.appendChild(defs);
+
+            EDGES.forEach(e => {
+                const u = NODES.find(n => n.id === e.src);
+                const v = NODES.find(n => n.id === e.dest);
+                
+                if(!u || !v) return;
+
+                // Calculate edge offset from node centers (like Chapter 5)
+                const dx = v.x - u.x;
+                const dy = v.y - u.y;
+                const dist = Math.hypot(dx, dy);
+                const offset = 25; // Distance from node center
+                const startX = u.x + (dx / dist) * offset;
+                const startY = u.y + (dy / dist) * offset;
+                const endX = v.x - (dx / dist) * offset;
+                const endY = v.y - (dy / dist) * offset;
+
+                const line = createSVGElement('line', {
+                    x1: startX, y1: startY, x2: endX, y2: endY,
+                    stroke: '#666', 'stroke-width': 2, 'stroke-opacity': 0.4
+                });
+                
+                // Highlight currently checked edge (respect direction)
+                const isCheckingDirected = (state.current === e.src && state.checking === e.dest);
+                const isCheckingUndirected = (state.current === e.src && state.checking === e.dest) || (state.current === e.dest && state.checking === e.src);
+                const isChecking = (GRAPH_MODE === 'directed') ? isCheckingDirected : isCheckingUndirected;
+                
+                // Highlight DFS tree edges (parent pointers)
+                const isTreeDirected = state.p && state.p[e.dest] === e.src;
+                const isTreeUndirected = state.p && ((state.p[e.dest] === e.src) || (state.p[e.src] === e.dest));
+                const isTree = (GRAPH_MODE === 'directed') ? isTreeDirected : isTreeUndirected;
+                
+                if (isTree) {
+                    // DFS tree edge - green, thick
+                    line.setAttribute('stroke', '#00e676');
+                    line.setAttribute('stroke-width', 4);
+                    line.setAttribute('stroke-opacity', '1');
+                } else if(isChecking) {
+                    // Currently checking - yellow
+                    line.setAttribute('stroke', '#ffea00');
+                    line.setAttribute('stroke-width', 3);
+                    line.setAttribute('stroke-opacity', '1');
+                } else {
+                    // Regular edge - gray, thin
+                    line.setAttribute('stroke', '#666');
+                    line.setAttribute('stroke-width', 2);
+                    line.setAttribute('stroke-opacity', '0.3');
+                }
+
+                // Add arrow marker for directed edges
+                if(GRAPH_MODE === 'directed') {
+                    line.setAttribute('marker-end', 'url(#arrow)');
+                }
+
+                svg.appendChild(line);
+            });
+
+            // Nodes - Improved styling like Chapter 5
+            NODES.forEach(n => {
+                const g = createSVGElement('g', { 
+                    transform: `translate(${n.x}, ${n.y})`,
+                    style: 'cursor: grab'
+                });
+                g.addEventListener('mousedown', (e) => handleMouseDown(e, n.id));
+                
+                // Color based on DFS state (WHITE/GRAY/BLACK)
+                let fill = '#333';
+                let stroke = '#666';
+                let strokeWidth = 2;
+                
+                if(state.color[n.id] === 'WHITE') { 
+                    fill = '#333'; 
+                    stroke = '#666'; 
+                } else if(state.color[n.id] === 'GRAY') { 
+                    fill = '#2196f3'; 
+                    stroke = '#2196f3'; 
+                } else if(state.color[n.id] === 'BLACK') { 
+                    fill = '#00e676'; 
+                    stroke = '#00e676'; 
+                }
+
+                const circle = createSVGElement('circle', {
+                    r: 25, fill: fill, stroke: stroke, 'stroke-width': strokeWidth
+                });
+
+                // Highlight current vertex
+                if(state.current === n.id) {
+                    circle.setAttribute('stroke', '#ffea00');
+                    circle.setAttribute('stroke-width', 4);
+                }
+
+                const label = createSVGElement('text', {
+                    dy: 5, 'text-anchor': 'middle', 
+                    fill: '#fff',
+                    'font-weight': 'bold',
+                    'font-size': '14px',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                label.textContent = n.id;
+
+                // Timestamps with background (like Chapter 5)
+                if(state.d[n.id] > 0) {
+                    const dVal = state.d[n.id];
+                    const fVal = state.f[n.id] > 0 ? state.f[n.id] : '?';
+                    const timestampText = `${dVal}/${fVal}`;
+                    
+                    // Background rectangle for timestamp
+                    const bgRect = createSVGElement('rect', {
+                        x: -20, y: -42,
+                        width: 40, height: 18,
+                        rx: 3,
+                        fill: 'rgba(0, 0, 0, 0.85)',
+                        stroke: state.color[n.id] === 'GRAY' ? '#2196f3' : (state.color[n.id] === 'BLACK' ? '#00e676' : '#666'),
+                        'stroke-width': '1.5'
+                    });
+                    
+                    // Timestamp text
+                    const ts = createSVGElement('text', {
+                        dy: -30, 'text-anchor': 'middle', 
+                        'font-size': '11px', 
+                        'font-weight': 'bold', 
+                        fill: state.color[n.id] === 'GRAY' ? '#00bcd4' : (state.color[n.id] === 'BLACK' ? '#00e676' : '#fff'),
+                        style: 'pointer-events: none; user-select: none;'
+                    });
+                    ts.textContent = timestampText;
+                    
+                    g.appendChild(bgRect);
+                    g.appendChild(ts);
+                }
+
+                g.appendChild(circle);
+                g.appendChild(label);
+                svg.appendChild(g);
+            });
+
+            container.appendChild(svg);
+        }
+
+        const steps = generateSteps();
+        player = new StepPlayer(render, null);
+        player.setSteps(steps);
+
+        syncStartDropdown();
+        if(NODES.length > 0) START_NODE = NODES[0].id;
+        
+        // Bind Start Selection
+        if(startSelect) {
+            startSelect.addEventListener('change', (e) => {
+                START_NODE = e.target.value;
+                const steps = generateSteps();
+                player.setSteps(steps);
+                player.reset();
+            });
+        }
+        
+        // Bind Random Button
+        document.getElementById('btnRandom').addEventListener('click', generateRandomGraph);
+        
+        // Bind Spanning Tree Button
+        document.getElementById('btnSpanTree').addEventListener('click', generateSpanningTree);
+
+        // Graph mode toggles
+        document.getElementById('modeDirected').addEventListener('change', () => {
+            GRAPH_MODE = 'directed';
+            const steps = generateSteps();
+            player.setSteps(steps);
+            player.reset();
+        });
+        document.getElementById('modeUndirected').addEventListener('change', () => {
+            GRAPH_MODE = 'undirected';
+            const steps = generateSteps();
+            player.setSteps(steps);
+            player.reset();
+        });
+    </script>
+</body>
+</html>

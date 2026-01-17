@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kruskal's Algorithm - Greedy Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .edge-list {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            bottom: 20px;
+            width: 150px;
+            overflow-y: auto;
+            border-right: 1px solid #444;
+            padding-right: 10px;
+        }
+
+        .edge-item {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+            color: #888;
+            transition: all 0.3s;
+        }
+
+        .edge-item.active { background: #333; color: #fff; border-left: 3px solid var(--warning); }
+        .edge-item.accepted { color: var(--success); font-weight: bold; }
+        .edge-item.rejected { color: var(--error); text-decoration: line-through; }
+        
+        .sets-display {
+            position: absolute;
+            bottom: 150px;
+            right: 20px;
+            width: 200px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+
+        .dsu-trace-container {
+            max-height: 220px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            line-height: 1.4;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .dsu-trace-entry {
+            margin-bottom: 12px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 2px solid var(--accent);
+            border-radius: 3px;
+        }
+
+        .dsu-trace-entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .dsu-sets-line {
+            color: var(--text-main);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .dsu-trace-line {
+            color: var(--text-mute);
+            margin-left: 12px;
+            margin-bottom: 2px;
+        }
+
+        .dsu-decision {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .dsu-decision.accept {
+            color: var(--success);
+        }
+
+        .dsu-decision.reject {
+            color: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <a href="index.html">Chapter 5</a> &gt; <span>Kruskal's MST</span>
+        </div>
+        <div class="page-title">Kruskal's Algorithm</div>
+        <div></div>
+    </header>
+
+    <div class="main-grid">
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Problem</h3>
+                <p class="status-text" style="font-size: 0.9rem; min-height: auto;">
+                    Find MST by selecting edges in increasing order of weight.
+                    <br><br>
+                    <strong>Constraint:</strong> Add edge only if it doesn't form a cycle (using Disjoint Sets).
+                </p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <button id="btnPrev">⏮</button>
+                    <button id="btnPlay" class="primary-btn">▶ Play</button>
+                    <button id="btnNext">⏭</button>
+                    <button id="btnReset">↻</button>
+                    <button id="btnRandom" title="New Random Graph">🎲</button>
+                </div>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedRange" min="100" max="1900" value="1000">
+                    <span>Fast</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Step</h3>
+                <div id="step-counter" style="margin-bottom: 5px; font-weight: bold; color: var(--accent);">0 / 0</div>
+                <p id="step-desc" class="status-text">Ready...</p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Disjoint Sets & Find() Trace</h3>
+                <div id="dsu-trace" class="dsu-trace-container"></div>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div id="canvas-container" style="padding-left: 180px;">
+                <div class="edge-list" id="edge-list-dom">
+                    <!-- Sorted Edges -->
+                </div>
+                <!-- SVG Graph -->
+            </div>
+            
+            <div class="pseudocode-container">
+                <div class="code-line" id="line-1">Sort all edges by weight ascending</div>
+                <div class="code-line" id="line-2">Initialize disjoint set for each vertex</div>
+                <div class="code-line" id="line-3">For each edge (u, v) in sorted list:</div>
+                <div class="code-line" id="line-4">  If FindSet(u) != FindSet(v):</div>
+                <div class="code-line" id="line-5">    Add (u, v) to MST</div>
+                <div class="code-line" id="line-6">    Union(u, v)</div>
+                <div class="code-line" id="line-7">  Else: Reject (Cycle)</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Use same data structure as Prim's
+        let NODES = [
+            { id: '1', x: 200, y: 100 },
+            { id: '2', x: 400, y: 50 },
+            { id: '3', x: 400, y: 150 },
+            { id: '4', x: 600, y: 100 },
+            { id: '5', x: 300, y: 250 },
+            { id: '6', x: 500, y: 250 }
+        ];
+
+        let EDGES_RAW = [
+            { src: '1', dest: '2', w: 4 },
+            { src: '1', dest: '3', w: 2 },
+            { src: '2', dest: '3', w: 1 },
+            { src: '2', dest: '4', w: 5 },
+            { src: '3', dest: '5', w: 8 },
+            { src: '3', dest: '4', w: 10 },
+            { src: '5', dest: '6', w: 3 },
+            { src: '4', dest: '6', w: 6 },
+            { src: '3', dest: '6', w: 2 } 
+        ];
+
+        // Random Graph Generator with organized circular layout
+        function generateRandomGraph() {
+            const numNodes = Math.floor(Math.random() * 3) + 5; // 5-7
+            const newNodes = [];
+            const newEdges = [];
+            const width = 600;
+            const height = 350;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35; // Circular layout radius
+
+            // Generate nodes in organized circular layout
+            for(let i=0; i<numNodes; i++) {
+                const angle = (2 * Math.PI * i) / numNodes;
+                const node = {
+                    id: (i+1).toString(),
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                };
+                newNodes.push(node);
+            }
+
+            // Track edges to avoid duplicates
+            const edgeSet = new Set();
+            
+            for(let i=0; i<numNodes; i++) {
+                for(let j=i+1; j<numNodes; j++) {
+                    if(Math.random() < 0.35) {
+                        const edgeId = getEdgeId(newNodes[i].id, newNodes[j].id);
+                        if(!edgeSet.has(edgeId)) {
+                            edgeSet.add(edgeId);
+                            newEdges.push({ src: newNodes[i].id, dest: newNodes[j].id, w: Math.floor(Math.random()*15)+1 });
+                        }
+                    }
+                }
+            }
+            // Ensure connectivity - check for duplicates
+            for(let i=1; i<numNodes; i++) {
+                const target = Math.floor(Math.random() * i);
+                const edgeId = getEdgeId(newNodes[i].id, newNodes[target].id);
+                if(!edgeSet.has(edgeId)) {
+                    edgeSet.add(edgeId);
+                    newEdges.push({ src: newNodes[i].id, dest: newNodes[target].id, w: Math.floor(Math.random()*15)+1 });
+                }
+            }
+
+            NODES = newNodes;
+            EDGES_RAW = newEdges;
+            
+            // Regenerate steps with new graph
+            const steps = generateSteps();
+            player.setSteps(steps);
+            
+            // Reset to first step
+            player.reset();
+        }
+
+        // Drag & Drop
+        let isDragging = false;
+        let draggedNodeId = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function handleMouseDown(e, nodeId) {
+            if (e.button !== 0) return;
+            isDragging = true;
+            draggedNodeId = nodeId;
+            e.stopPropagation();
+            e.preventDefault();
+            const rect = container.getBoundingClientRect();
+            const node = NODES.find(n => n.id === nodeId);
+            if(node) {
+                dragOffsetX = (e.clientX - rect.left) - node.x;
+                dragOffsetY = (e.clientY - rect.top) - node.y;
+            }
+            document.body.style.cursor = 'grabbing';
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggedNodeId) return;
+            const rect = container.getBoundingClientRect();
+            const node = NODES.find(n => n.id === draggedNodeId);
+            if (node) {
+                let x = (e.clientX - rect.left) - dragOffsetX;
+                let y = (e.clientY - rect.top) - dragOffsetY;
+                node.x = Math.max(25, Math.min(rect.width - 25, x));
+                node.y = Math.max(25, Math.min(rect.height - 25, y));
+                player.updateUI();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if(isDragging) {
+                isDragging = false;
+                draggedNodeId = null;
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        let player;
+        const container = document.getElementById('canvas-container');
+        const edgeListEl = document.getElementById('edge-list-dom');
+        const dsuTraceEl = document.getElementById('dsu-trace');
+
+        // Helpers
+        function getEdgeId(u, v) {
+            const [a, b] = [u, v].sort();
+            return `${a}-${b}`;
+        }
+
+        // Format sets from DSU state
+        function formatSets(dsu, nodes) {
+            const setsMap = new Map();
+            
+            // Group vertices by root
+            nodes.forEach(n => {
+                const root = dsu.find(n.id);
+                if (!setsMap.has(root)) {
+                    setsMap.set(root, []);
+                }
+                setsMap.get(root).push(n.id);
+            });
+            
+            // Sort vertices inside each set
+            setsMap.forEach((vertices, root) => {
+                vertices.sort((a, b) => {
+                    // Try numeric comparison first, then string
+                    const numA = parseInt(a);
+                    const numB = parseInt(b);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return numA - numB;
+                    }
+                    return a < b ? -1 : (a > b ? 1 : 0);
+                });
+            });
+            
+            // Sort sets by smallest member
+            const sortedSets = Array.from(setsMap.entries()).sort(([rootA, verticesA], [rootB, verticesB]) => {
+                const minA = verticesA[0];
+                const minB = verticesB[0];
+                const numA = parseInt(minA);
+                const numB = parseInt(minB);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return numA - numB;
+                }
+                return minA < minB ? -1 : (minA > minB ? 1 : 0);
+            });
+            
+            // Format as string
+            return sortedSets.map(([root, vertices]) => {
+                return `{${vertices.join(',')}}`;
+            }).join(' ');
+        }
+
+        // Dedupe parallel edges - keep only minimum weight edge per pair
+        function dedupeEdges(edges) {
+            const edgeMap = new Map();
+            
+            edges.forEach((edge, index) => {
+                const normalizedId = getEdgeId(edge.src, edge.dest);
+                const existing = edgeMap.get(normalizedId);
+                
+                if (!existing || edge.w < existing.w) {
+                    // Keep this edge (either first occurrence or smaller weight)
+                    edgeMap.set(normalizedId, { ...edge, originalIndex: index });
+                }
+            });
+            
+            return Array.from(edgeMap.values());
+        }
+
+        // Disjoint Set Union with path compression and union by rank
+        class DSU {
+            constructor(nodes) {
+                this.parent = {};
+                this.rank = {};
+                nodes.forEach(n => {
+                    this.parent[n.id] = n.id;
+                    this.rank[n.id] = 0;
+                });
+            }
+            
+            find(i) {
+                // Path compression
+                if (this.parent[i] !== i) {
+                    this.parent[i] = this.find(this.parent[i]);
+                }
+                return this.parent[i];
+            }
+            
+            union(i, j) {
+                const rootI = this.find(i);
+                const rootJ = this.find(j);
+                
+                if (rootI === rootJ) {
+                    return false; // Already in same set
+                }
+                
+                // Union by rank
+                if (this.rank[rootI] < this.rank[rootJ]) {
+                    this.parent[rootI] = rootJ;
+                } else if (this.rank[rootI] > this.rank[rootJ]) {
+                    this.parent[rootJ] = rootI;
+                } else {
+                    this.parent[rootJ] = rootI;
+                    this.rank[rootI]++;
+                }
+                
+                return true;
+            }
+        }
+
+        // Color palette for sets
+        const SET_COLORS = ['#ef5350', '#42a5f5', '#66bb6a', '#ffa726', '#ab47bc', '#8d6e63'];
+
+        function generateSteps() {
+            let steps = [];
+            
+            // Dedupe parallel edges first
+            let edgesDeduped = dedupeEdges(EDGES_RAW);
+            
+            // Sort with deterministic tie-breaking
+            // When weights are equal: tie-break by normalized src, then dest, then original index
+            let edges = edgesDeduped.sort((a, b) => {
+                if (a.w !== b.w) {
+                    return a.w - b.w; // Primary: weight ascending
+                }
+                // Tie-break 1: normalized src (min of src/dest)
+                const aNorm = [a.src, a.dest].sort();
+                const bNorm = [b.src, b.dest].sort();
+                if (aNorm[0] !== bNorm[0]) {
+                    return aNorm[0] < bNorm[0] ? -1 : 1;
+                }
+                // Tie-break 2: normalized dest
+                if (aNorm[1] !== bNorm[1]) {
+                    return aNorm[1] < bNorm[1] ? -1 : 1;
+                }
+                // Tie-break 3: original index (for stability)
+                return (a.originalIndex || 0) - (b.originalIndex || 0);
+            });
+            
+            // Assign unique IDs to edges for tracking
+            edges.forEach((edge, idx) => {
+                edge.uniqueId = `edge-${idx}`;
+                edge.edgeId = getEdgeId(edge.src, edge.dest);
+            });
+            
+            let dsu = new DSU(NODES);
+            
+            let mstEdges = [];
+            let rejectedEdges = [];
+            
+            // Map node ID to current Set ID (initially itself) for visualization
+            let nodeSets = {};
+            NODES.forEach(n => nodeSets[n.id] = n.id);
+
+            // Create a copy of DSU for trace (to avoid modifying the actual DSU)
+            const dsuForTrace = new DSU(NODES);
+            const traceEntries = [];
+            
+            // Initial state trace
+            traceEntries.push({
+                setsBefore: formatSets(dsuForTrace, NODES),
+                setsAfter: null,
+                u: null,
+                v: null,
+                sameSet: null,
+                decision: null
+            });
+            
+            steps.push({
+                description: "Sort edges by weight. Initialize each node as its own set.",
+                codeLine: 1,
+                state: { edges, mstEdges: [], rejectedEdges: [], currentEdge: null, nodeSets: {...nodeSets}, dsuTrace: [...traceEntries] }
+            });
+
+            const targetMstSize = NODES.length - 1; // MST has V-1 edges
+            
+            for(let i=0; i<edges.length; i++) {
+                // Stop when MST has V-1 edges
+                if (mstEdges.length >= targetMstSize) {
+                    break;
+                }
+                
+                const e = edges[i];
+                const edgeId = e.edgeId;
+                
+                // Get sets BEFORE processing this edge
+                const setsBefore = formatSets(dsuForTrace, NODES);
+                
+                // Compute Find() results
+                const rootSrc = dsuForTrace.find(e.src);
+                const rootDest = dsuForTrace.find(e.dest);
+                const sameSet = (rootSrc === rootDest);
+                
+                // Create trace entry
+                const traceEntry = {
+                    setsBefore: setsBefore,
+                    setsAfter: null,
+                    u: e.src,
+                    v: e.dest,
+                    rootU: rootSrc,
+                    rootV: rootDest,
+                    sameSet: sameSet,
+                    decision: null
+                };
+                
+                steps.push({
+                    description: `Check edge <strong>${e.src}-${e.dest}</strong> (Weight: ${e.w}).`,
+                    codeLine: 3,
+                    state: { edges, mstEdges: [...mstEdges], rejectedEdges: [...rejectedEdges], currentEdge: edgeId, nodeSets: {...nodeSets}, dsuTrace: [...traceEntries, traceEntry] }
+                });
+
+                // Now use actual DSU for algorithm
+                const actualRootSrc = dsu.find(e.src);
+                const actualRootDest = dsu.find(e.dest);
+
+                if (actualRootSrc !== actualRootDest) {
+                    dsu.union(e.src, e.dest);
+                    dsuForTrace.union(e.src, e.dest); // Update trace DSU too
+                    mstEdges.push(edgeId);
+                    
+                    // Update sets for coloring
+                    NODES.forEach(n => nodeSets[n.id] = dsu.find(n.id));
+                    
+                    // Update trace entry with result
+                    traceEntry.setsAfter = formatSets(dsuForTrace, NODES);
+                    traceEntry.decision = 'accept';
+
+                    steps.push({
+                        description: `Find(${e.src}) != Find(${e.dest}). Add edge to MST & Union sets.`,
+                        codeLine: 6,
+                        state: { edges, mstEdges: [...mstEdges], rejectedEdges: [...rejectedEdges], currentEdge: edgeId, nodeSets: {...nodeSets}, dsuTrace: [...traceEntries, traceEntry] }
+                    });
+                } else {
+                    rejectedEdges.push(edgeId);
+                    
+                    // Update trace entry with result
+                    traceEntry.decision = 'reject';
+
+                    steps.push({
+                        description: `Find(${e.src}) == Find(${e.dest}). Cycle detected! Reject.`,
+                        codeLine: 7,
+                        state: { edges, mstEdges: [...mstEdges], rejectedEdges: [...rejectedEdges], currentEdge: edgeId, nodeSets: {...nodeSets}, dsuTrace: [...traceEntries, traceEntry] }
+                    });
+                }
+                
+                // Add to trace entries for next iteration
+                traceEntries.push(traceEntry);
+            }
+
+            steps.push({
+                description: "MST Complete.",
+                codeLine: null,
+                state: { edges, mstEdges: [...mstEdges], rejectedEdges: [...rejectedEdges], currentEdge: null, nodeSets: {...nodeSets}, dsuTrace: [...traceEntries] }
+            });
+
+            return steps;
+        }
+
+        function updateDsuTrace(state) {
+            if (!dsuTraceEl) return;
+            
+            dsuTraceEl.innerHTML = '';
+            
+            if (!state.dsuTrace || state.dsuTrace.length === 0) {
+                dsuTraceEl.innerHTML = '<div style="color: var(--text-mute); font-size: 0.7rem; padding: 8px;">No trace data available</div>';
+                return;
+            }
+            
+            state.dsuTrace.forEach((entry, index) => {
+                // Skip initial entry (no edge processed)
+                if (entry.u === null) {
+                    const div = document.createElement('div');
+                    div.className = 'dsu-trace-entry';
+                    div.innerHTML = `
+                        <div class="dsu-sets-line">Sets: ${entry.setsBefore}</div>
+                    `;
+                    dsuTraceEl.appendChild(div);
+                    return;
+                }
+                
+                const div = document.createElement('div');
+                div.className = 'dsu-trace-entry';
+                
+                let html = `<div class="dsu-sets-line">Sets (before): ${entry.setsBefore}</div>`;
+                
+                // Find condition trace - show the actual condition from pseudocode
+                html += `<div class="dsu-trace-line">If FindSet(u) != FindSet(v):</div>`;
+                html += `<div class="dsu-trace-line">FindSet(${entry.u}) != FindSet(${entry.v})</div>`;
+                
+                // Boolean evaluation - show root comparison
+                const rootUStr = entry.rootU;
+                const rootVStr = entry.rootV;
+                html += `<div class="dsu-trace-line">${rootUStr} != ${rootVStr}</div>`;
+                
+                // Final boolean result (True if different, False if same)
+                const resultStr = entry.sameSet ? 'False' : 'True';
+                html += `<div class="dsu-trace-line">${resultStr}</div>`;
+                
+                // Decision
+                if (entry.decision === 'accept') {
+                    html += `<div class="dsu-decision accept">Condition is True → ACCEPT edge (${entry.u}–${entry.v}) and add to MST</div>`;
+                    html += `<div class="dsu-trace-line" style="margin-top: 4px;">Union(${entry.u}, ${entry.v})</div>`;
+                    if (entry.setsAfter) {
+                        html += `<div class="dsu-sets-line" style="margin-top: 4px;">Sets (after): ${entry.setsAfter}</div>`;
+                    }
+                } else if (entry.decision === 'reject') {
+                    html += `<div class="dsu-decision reject">Condition is False → REJECT edge (${entry.u}–${entry.v}) - Cycle detected</div>`;
+                }
+                
+                div.innerHTML = html;
+                dsuTraceEl.appendChild(div);
+            });
+            
+            // Auto-scroll to bottom
+            dsuTraceEl.scrollTop = dsuTraceEl.scrollHeight;
+        }
+
+        function render(state) {
+            // Render Edge List - use the same sorted edges from algorithm
+            edgeListEl.innerHTML = '<h4>Edges (Sorted)</h4>';
+            state.edges.forEach(e => {
+                const id = e.edgeId || getEdgeId(e.src, e.dest);
+                const div = document.createElement('div');
+                div.className = 'edge-item';
+                div.innerText = `${e.src}-${e.dest} : ${e.w}`;
+                
+                if(state.currentEdge === id) div.classList.add('active');
+                if(state.mstEdges.includes(id)) div.classList.add('accepted');
+                if(state.rejectedEdges.includes(id)) div.classList.add('rejected');
+                
+                edgeListEl.appendChild(div);
+            });
+
+            // SVG Graph - use the same edges array (after deduplication)
+            const oldSvg = container.querySelector('svg');
+            if(oldSvg) oldSvg.remove();
+            
+            const svg = createSVGElement('svg', { width: '100%', height: '100%', style: 'position:absolute; top:0; left:0; z-index:0;' });
+            
+            // Draw Edges - use state.edges (the deduplicated, sorted edges)
+            state.edges.forEach(edge => {
+                const u = NODES.find(n => n.id === edge.src);
+                const v = NODES.find(n => n.id === edge.dest);
+                // Safety
+                if(!u || !v) return;
+
+                const edgeId = edge.edgeId || getEdgeId(edge.src, edge.dest);
+
+                const line = createSVGElement('line', {
+                    x1: u.x, y1: u.y, x2: v.x, y2: v.y,
+                    class: 'edge',
+                    'stroke-opacity': 0.1, // Faint by default
+                    stroke: '#fff',
+                    'data-edge-id': edgeId
+                });
+
+                if(state.mstEdges.includes(edgeId)) {
+                    line.setAttribute('stroke', '#00e676');
+                    line.setAttribute('stroke-width', '4');
+                    line.setAttribute('stroke-opacity', '1');
+                } else if(state.currentEdge === edgeId) {
+                    line.setAttribute('stroke', '#ffea00');
+                    line.setAttribute('stroke-width', '3');
+                    line.setAttribute('stroke-opacity', '1');
+                } else if(state.rejectedEdges.includes(edgeId)) {
+                    line.setAttribute('stroke', '#666');
+                    line.setAttribute('stroke-width', '2');
+                    line.setAttribute('stroke-opacity', '0.2');
+                    line.setAttribute('stroke-dasharray', '5,5');
+                }
+
+                svg.appendChild(line);
+                
+                // Weight label with background for better visibility
+                const midX = (u.x + v.x) / 2;
+                const midY = (u.y + v.y) / 2;
+                
+                // Calculate angle to offset label perpendicular to edge
+                const dx = v.x - u.x;
+                const dy = v.y - u.y;
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI / 2;
+                const offsetX = Math.cos(perpAngle) * 18;
+                const offsetY = Math.sin(perpAngle) * 18;
+                
+                const weightStr = String(edge.w);
+                const textWidth = Math.max(24, weightStr.length * 9 + 8);
+                
+                // Background rectangle
+                const bgRect = createSVGElement('rect', {
+                    x: midX + offsetX - textWidth / 2,
+                    y: midY + offsetY - 10,
+                    width: textWidth,
+                    height: 20,
+                    rx: 4,
+                    fill: state.mstEdges.includes(edgeId) ? 'rgba(0, 230, 118, 0.95)' : 
+                          state.rejectedEdges.includes(edgeId) ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.9)',
+                    stroke: state.mstEdges.includes(edgeId) ? '#00e676' : '#aaa',
+                    'stroke-width': '1.5',
+                    'stroke-opacity': '1'
+                });
+                svg.appendChild(bgRect);
+                
+                // Weight text
+                const text = createSVGElement('text', {
+                    x: midX + offsetX,
+                    y: midY + offsetY + 2,
+                    fill: state.mstEdges.includes(edgeId) ? '#000' : '#fff',
+                    'font-size': '15px',
+                    'font-weight': 'bold',
+                    'text-anchor': 'middle',
+                    'dominant-baseline': 'central',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                text.textContent = edge.w;
+                svg.appendChild(text);
+            });
+
+            // Draw Nodes
+            // Map set roots to colors
+            const uniqueRoots = [...new Set(Object.values(state.nodeSets))];
+            
+            NODES.forEach(node => {
+                const root = state.nodeSets[node.id];
+                const rootIndex = uniqueRoots.indexOf(root);
+                const color = SET_COLORS[rootIndex % SET_COLORS.length];
+
+                const g = createSVGElement('g', { 
+                    transform: `translate(${node.x}, ${node.y})`,
+                    style: 'cursor: grab'
+                });
+                g.addEventListener('mousedown', (e) => handleMouseDown(e, node.id));
+                
+                const circle = createSVGElement('circle', {
+                    r: 20, class: 'node',
+                    fill: color, stroke: '#fff'
+                });
+                
+                const label = createSVGElement('text', {
+                    dy: 5, 'text-anchor': 'middle', fill: '#fff', 'font-weight': 'bold',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                label.textContent = node.id;
+
+                g.appendChild(circle);
+                g.appendChild(label);
+                svg.appendChild(g);
+            });
+
+            container.appendChild(svg);
+            
+            // Update DSU trace
+            updateDsuTrace(state);
+        }
+
+        const steps = generateSteps();
+        player = new StepPlayer(render, null);
+        player.setSteps(steps);
+        
+        document.getElementById('btnRandom').addEventListener('click', generateRandomGraph);
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithm Visualizer</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: #1a1a1a;
+            --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #161616 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: var(--surface-color);
+            border-radius: 20px;
+            padding: 50px 40px;
+            width: 450px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: var(--card-shadow);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: block;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(118, 75, 162, 0.5);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .card:hover::after { opacity: 0.05; }
+
+        .card-content { position: relative; z-index: 1; }
+
+        .card-number {
+            font-size: 5rem;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.03);
+            position: absolute;
+            top: -30px;
+            right: -20px;
+            transition: transform 0.4s ease;
+        }
+
+        .card:hover .card-number { transform: translate(-10px, 10px) scale(1.1); }
+
+        .card h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .card p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card { animation: fadeInUp 0.8s ease forwards; opacity: 0; }
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Algorithm Visualizer</h1>
+        <p>Interactive visualizations for complex algorithmic concepts</p>
+    </header>
+
+    <main>
+        <div class="cards-container">
+            <a href="./ch5- Greedy Algorithms/index.html" class="card">
+                <div class="card-content">
+                    <span class="card-number">5</span>
+                    <h2>Chapter 5: Greedy Algorithms</h2>
+                    <p>Discover optimization strategies that make the locally optimal choice at each stage.</p>
+                </div>
+            </a>
+
+            <a href="./ch6- graphs updated/index.html" class="card">
+                <div class="card-content">
+                    <span class="card-number">6</span>
+                    <h2>Chapter 6: Graph Algorithms</h2>
+                    <p>Explore nodes, edges, traversals, and complex network structures.</p>
+                </div>
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <p>Algorithm Visualizer &copy; 2026</p>
+    </footer>
+</body>
+</html>

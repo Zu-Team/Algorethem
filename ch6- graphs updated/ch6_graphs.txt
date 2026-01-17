@@ -1,0 +1,815 @@
+================================================================================
+Ch6 Graphs
+================================================================================
+
+
+--- Slide 1 ---
+Faculty of Information Technology - Computer Science Department
+1
+Algorithm Design and Analysis
+
+
+--- Slide 2 ---
+Faculty of Information Technology - Computer Science Department
+2
+Algorithm Design and Analysis
+
+
+--- Slide 3 ---
+Chapter 6: Elementary Graph terminologies and algorithms
+3
+Faculty of Information Technology - Computer Science Department
+
+
+--- Slide 4 ---
+A Graph is a data structure which consists of a set of vertices, and a set of edges that connect (some of) them.
+That is, G = (V, E), Where V - set of vertices, E - set of edges
+V = {1, 2, 3, 4, 5}
+E = { (1,2), (1,3), (1,4), (2,3), (3,5), (4,5) }
+What is Graph?
+4
+
+
+--- Slide 5 ---
+Computer Networks
+
+
+
+
+  Electrical Circuits
+
+
+
+
+
+  Road Map
+Some Applications
+5
+
+
+--- Slide 6 ---
+Graph Categorization
+6
+1-  Directed graph or Digraph: is a graph where each edge has a direction
+The edges in a digraph are called Arcs or Directed Edges
+2-  Undirected graph: is a graph where the edges have no directions
+    The edges in an undirected graph are called Undirected Edges
+
+
+--- Slide 7 ---
+7
+3- Weighted graph: is a graph where each edge carries a value
+A weighted graph is a graph G = (V, E, W), where each edge, e  E is assigned a real valued weight, W(e).
+Cont …..
+4-  Complete graph: is a graph with an edge between every pair of vertices.
+A graph is called complete graph if every vertex is adjacent to every other vertex.
+
+
+--- Slide 8 ---
+Graph Terminology
+8
+Adjacent vertices: connected by an edge
+Vertex v is adjacent to u if and only if (u, v)  E. 
+In an undirected graph with edge (u, v), and hence (v, u), v is adjacent to u and u is adjacent to v.
+A Path is a sequence of edges in the graph
+ There can be more than one path between two vertices. Paths from a to e 
+                      - One path              a, b, e 
+                      - Another path       a, c, d, e
+Vertex u is reachable from v if there is a path from v to u.
+Length of a path is the sum of the lengths of the edges on the path.
+ Length of the path a,c,d,e  is 3
+
+
+--- Slide 9 ---
+9
+A simple path is a path such that all vertices are distinct.
+1,4,5,3 is a simple path. 
+But 1,4,5,4 is not a simple path.
+Cont…..
+Loops or self edges: an edge (v , v) is called a self edge or a loop.
+ ( 1,1 ) and ( 4,4 ) are self edges
+Circuit: A path whose first and last vertices are the same.
+  The path 3,2,1,4,5,3 is a circuit.
+
+Cycle: A circuit where all the vertices are distinct except for the first (and the last) vertex.
+1,4,5,3,1 is a cycle, but 1,4,5,4,1 is not a cycle.
+Hamiltonian Cycle: A Cycle that contains all the vertices of the graph.
+  1,4,5,3,2,1 is a Hamiltonian Cycle.
+Parallel edges
+Edges connecting same vertices . Graph that contains  parallel edges said a Multigraph.
+   Simple graph
+Graph without loops or parallel edges
+
+
+--- Slide 10 ---
+Degree of a Vertex: In an undirected graph, the number of edges incident to the vertex
+  degree(1) = 3, degree(5) = 2
+10
+Cont…..
+In-degree and out-degree of a Vertex: In a directed graph
+  In-degree: the number of edges entering the vertex in a digraph
+ In-degree of 1 is 3
+
+  Out-degree: the number of edges leaving the vertex in a digraph
+ Out-degree of 1 is 1
+A Subgraph of graph G=(V,E) is a graph H=(U,F) such that U Є V and F Є E
+
+
+--- Slide 11 ---
+Connected graph: is the graph that has at least one path from every vertex to every other vertex in the graph.
+11
+Cont…..
+Tree: a connected undirected graph that contains no cycles
+Forest: a graph that does not contain a cycle 
+Collection of trees
+
+
+--- Slide 12 ---
+1- Adjacency Matrix (A)
+ The Adjacency Matrix A=(ai,j) of a graph G=(V,E) with n nodes is an n x n matrix  
+ Each element of A is either 0 or 1, depending on the adjacency of the nodes
+ aij = 1, if (i,j) Є E, 
+	 aij = 0, otherwise
+     Example: Find the adjacency matrices of the following graphs.
+Representation of Graphs
+12
+Adjacency Matrix of a Weighted Graph
+ The weight of the edge can be shown in the matrix when the vertices are adjacent
+ A nil value (0 or ∞) depending on the problem is used when they are not adjacent
+Example: To find the minimum distance between nodes...
+
+
+--- Slide 13 ---
+2- Adjacency List
+ An Adjacency list is an array of lists, each list showing the vertices a given vertex is adjacent to….
+13
+Cont…..
+Adjacency List of a Weighted Graph
+ The weight is included in the list
+
+
+--- Slide 14 ---
+Graph Searching Methods
+Many graph problems solved using a search method
+Path from one vertex to another
+Is the graph connected?
+  Commonly used search methods:
+Breadth-first search (BFS)
+Depth-first search (DFS)
+- A vertex u is reachable from vertex v iff there is a path from v to u.
+- A search method starts at a given vertex v and visits every vertex that is reachable from v.
+Graph Searching Method:
+
+- Given: a graph G = (V, E), directed or undirected
+
+- Goal: methodically explore every vertex and every edge
+
+
+--- Slide 15 ---
+Breadth-First Search (BFS)
+Starting from a given node s, BFS visit the vertices at distance d from s before visiting the vertices at distance d+1 
+
+ Idea:
+Visit start vertex (s) and put into a queue (FIFO).
+Repeatedly remove a vertex from the queue, visit its unvisited adjacent vertices, put newly visited vertices into the queue.
+All vertices reachable from the start vertex (s) (including the start vertex) are visited.
+Work Strategy:
+       Again will associate vertex “colors” to guide the algorithm
+White vertices have not been discovered
+All vertices start out white
+Gray vertices are discovered but not fully explored
+They may be adjacent to white vertices
+Black vertices are discovered and fully explored
+They are adjacent only to black and gray vertices
+Explore vertices by scanning adjacency list of gray vertices
+
+
+--- Slide 16 ---
+BFS - Code
+BFS(G, s) {
+                                                       // initialize vertices;
+1	 for each u  V(G) – {s}{
+2		do color[u] = WHITE
+3		   d[u] = 		                                 // distance from s to u
+4		   p[u] = NIL		                           // predecessor or parent of u
+    }
+5   color[s] = GRAY
+6   d[s] = 0
+7   p[s] = NIL
+8	 Q = Empty;
+9 	 Enqueue (Q,s);		                           // Q is a queue; initialize to s
+10  while (Q not empty) {    
+11      u = Dequeue(Q);
+12      for each v  adj[u] {
+13          if (color[v] == WHITE)
+14              color[v] = GRAY;
+15              d[v] = d[u] + 1;
+16              p[v] = u;
+17              Enqueue(Q, v);
+        }
+18      color[u] = BLACK;
+    }
+}
+WHITE  -  Unvisited 
+GRAY   -  Discovered
+BLACK  -  Finished
+
+s - Source Vertex
+Q - FIFO Queue
+
+
+--- Slide 17 ---
+BFS - Example
+
+
+
+
+
+
+
+
+r
+s
+t
+u
+v
+w
+x
+y
+
+
+--- Slide 18 ---
+
+
+0
+
+
+
+
+
+r
+s
+t
+u
+v
+w
+x
+y
+s
+Q:
+S has two neighbors w and r
+You can add r then w or w then r (depends on the adjacency list order!)
+BFS - Example
+
+
+--- Slide 19 ---
+1
+
+0
+1
+
+
+
+
+r
+s
+t
+u
+v
+w
+x
+y
+w
+Q:
+r
+BFS - Example
+
+
+--- Slide 20 ---
+1
+
+0
+1
+2
+2
+
+
+r
+s
+t
+u
+v
+w
+x
+y
+r
+Q:
+t
+x
+BFS - Example
+
+
+--- Slide 21 ---
+1
+2
+0
+1
+2
+2
+
+
+r
+s
+t
+u
+v
+w
+x
+y
+Q:
+t
+x
+v
+BFS - Example
+
+
+--- Slide 22 ---
+1
+2
+0
+1
+2
+2
+3
+
+r
+s
+t
+u
+v
+w
+x
+y
+Q:
+x
+v
+u
+BFS - Example
+
+
+--- Slide 23 ---
+1
+2
+0
+1
+2
+2
+3
+3
+r
+s
+t
+u
+v
+w
+x
+y
+Q:
+v
+u
+y
+BFS - Example
+
+
+--- Slide 24 ---
+1
+2
+0
+1
+2
+2
+3
+3
+r
+s
+t
+u
+v
+w
+x
+y
+Q:
+u
+y
+BFS - Example
+
+
+--- Slide 25 ---
+1
+2
+0
+1
+2
+2
+3
+3
+r
+s
+t
+u
+v
+w
+x
+y
+Q:
+y
+BFS - Example
+
+
+--- Slide 26 ---
+1
+2
+0
+1
+2
+2
+3
+3
+r
+s
+t
+u
+v
+w
+x
+y
+Q:
+Ø
+BFS - Example
+
+
+--- Slide 27 ---
+BFS: Time complexity
+BFS(G, s) {
+    // initialize vertices
+    for each u  V(G) – {s}{
+		do color[u] = WHITE
+		   d[u] = 		
+		   p[u] = NIL		
+    }
+	 color[s] = GRAY;
+	 d[s] = 0;
+	 p[s] = NIL;
+	 Q = Empty;
+	 Enqueue (Q,s);		
+    while (Q not empty) {    
+        u = Dequeue(Q);
+        for each v  adj[u] {
+            if (color[v] == WHITE)
+                color[v] = GRAY;
+                d[v] = d[u] + 1;
+                p[v] = u;
+                Enqueue(Q, v);        }
+        color[u] = BLACK;    }  }
+What will be the running time?
+Total running time: O(V+E)
+
+
+--- Slide 28 ---
+BFS: Time Complexity
+Given a graph G = (V, E)
+ Vertices are enqueued if there color is white
+ Assuming that en- and dequeuing takes O(1) time the total cost of this operation is O(V)
+ Adjacency list of a vertex is scanned when the vertex is dequeued (and at most once)
+ The sum of the lengths of all lists is O(E). Consequently, O(E) time is spent on scanning them
+ Initializing the algorithm takes O(V)
+
+   Total running time O(V+E)
+linear in the size of the adjacency list representation of G
+What will be the storage cost in addition to storing the tree?
+
+
+--- Slide 29 ---
+Depth-First Search (DFS)
+DFS is another strategy for exploring a graph
+   Idea:
+Explore “deeper” in the graph whenever possible
+Edges are explored out of the most recently discovered vertex v that still has unexplored edges
+When all of v’s edges have been explored, backtrack to the vertex from which v was discovered
+Work Strategy:
+Initialize
+
+ Color all vertices white
+
+Visit each and every white vertex using DFS-Visit
+
+Each call to DFS-Visit(u) roots a new tree of the depth-first forest at vertex u
+
+A vertex is white if it is undiscovered
+
+A vertex is gray if it has been discovered but not all of its edges have been discovered
+
+A vertex is black after all of its adjacent vertices have been discovered (the adj. list was examined completely)
+
+
+--- Slide 30 ---
+DFS - Code
+DFS(G)
+{
+   for each vertex u  V[G]
+   {
+      color[u] = WHITE;
+      p[u] = NIL;
+   }
+   time = 0;
+   for each vertex u  V[G]
+   {
+      if (color[u] == WHITE)
+         DFS_Visit(u);
+   }
+}
+DFS_Visit(u)
+{
+   color[u] = GRAY;
+   time = time+1;
+   d[u] = time;
+   for each v  Adj[u]
+   {
+      if (color[v] == WHITE)
+		  p[v] = u;
+		  DFS_Visit(v);
+   }
+   color[u] = BLACK;
+   time = time+1;
+   f[u] = time;
+}
+// Initialize all vertices
+// Visit all children recursively
+
+
+--- Slide 31 ---
+DFS - Example
+sourcevertex
+
+
+--- Slide 32 ---
+DFS Example
+1 |
+|
+|
+|
+|
+|
+|
+|
+sourcevertex
+d      f
+
+
+--- Slide 33 ---
+DFS Example
+1 |
+|
+|
+|
+|
+|
+2 |
+|
+sourcevertex
+d      f
+
+
+--- Slide 34 ---
+DFS Example
+1 |
+|
+|
+|
+|
+3 |
+2 |
+|
+sourcevertex
+d      f
+
+
+--- Slide 35 ---
+DFS Example
+1 |
+|
+|
+|
+|
+3 | 4
+2 |
+|
+sourcevertex
+d      f
+
+
+--- Slide 36 ---
+DFS Example
+1 |
+|
+|
+|
+5 |
+3 | 4
+2 |
+|
+sourcevertex
+d      f
+
+
+--- Slide 37 ---
+DFS Example
+1 |
+|
+|
+|
+5 | 6
+3 | 4
+2 |
+|
+sourcevertex
+d      f
+
+
+--- Slide 38 ---
+DFS Example
+1 |
+8 |
+|
+|
+5 | 6
+3 | 4
+2 | 7
+|
+sourcevertex
+d      f
+
+
+--- Slide 39 ---
+DFS Example
+1 |
+8 |
+|
+|
+5 | 6
+3 | 4
+2 | 7
+9 |
+sourcevertex
+d      f
+What is the structure of the gray vertices?  What do they represent?
+
+
+--- Slide 40 ---
+DFS Example
+1 |
+8 |
+|
+|
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 41 ---
+DFS Example
+1 |
+8 |11
+|
+|
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 42 ---
+DFS Example
+1 |12
+8 |11
+|
+|
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 43 ---
+DFS Example
+1 |12
+8 |11
+13|
+|
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 44 ---
+DFS Example
+1 |12
+8 |11
+13|
+14|
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 45 ---
+DFS Example
+1 |12
+8 |11
+13|
+14|15
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 46 ---
+DFS Example
+1 |12
+8 |11
+13|16
+14|15
+5 | 6
+3 | 4
+2 | 7
+9 |10
+sourcevertex
+d      f
+
+
+--- Slide 47 ---
+Depth-First Search: The Code
+DFS(G)
+{
+   for each vertex u  V[G]
+   {
+      color[u] = WHITE;
+      p[u] = NIL
+   }
+   time = 0;
+   for each vertex u  V[G]
+   {
+      if (color[u] == WHITE)
+         DFS_Visit(u);
+   }
+}
+DFS_Visit(u)
+{
+   color[u] = GRAY;
+   time = time+1;
+   d[u] = time;
+   for each v  Adj[u]
+   {
+      if (color[v] == WHITE)
+		  p[v] = u;
+		  DFS_Visit(v);
+   }
+   color[u] = BLACK;
+   time = time+1;
+   f[u] = time;     }
+How many times will DFS_Visit() actually be called? (V)
+How many times will if statement be executed in all O(V) DFS_Visit calls? (E)
+(V)
+So, running time of DFS = (V+E)
+
+
+--- Slide 48 ---
+DFS: Time Complexity
+Running time
+the loops in DFS take time Q(V) each, excluding the time to execute DFS-Visit
+DFS-Visit is called once for every vertex
+its only invoked on white vertices, and
+paints the vertex gray immediately
+
+for each DFS-Visit(v) a loop iterates over all Adj[v] 
+the total cost for DFS-Visit is Q(E)
+
+
+
+the running time of DFS is Q(V+E)

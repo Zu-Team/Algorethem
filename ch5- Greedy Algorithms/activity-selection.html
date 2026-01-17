@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Selection - Greedy Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        #timeline {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            right: 50px;
+            height: 4px;
+            background: #333;
+            transform: translateY(-50%);
+        }
+        .activity-bar {
+            position: absolute;
+            height: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #444;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #fff;
+            transition: all 0.5s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .activity-bar.selected {
+            background: var(--success);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.4);
+            z-index: 10;
+        }
+        .activity-bar.rejected {
+            background: var(--error);
+            opacity: 0.3;
+        }
+        .activity-bar.checking {
+            background: var(--warning);
+            color: #000;
+            transform: translateY(-50%) scale(1.1);
+            z-index: 5;
+        }
+        .time-label {
+            position: absolute;
+            top: 30px;
+            font-size: 0.7rem;
+            color: #666;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <a href="index.html">Chapter 5</a> &gt; <span>Activity Selection</span>
+        </div>
+        <div class="page-title">Activity Selection Problem</div>
+        <div></div>
+    </header>
+
+    <div class="main-grid">
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Problem</h3>
+                <p class="status-text" style="font-size: 0.9rem; min-height: auto;">
+                    Select the maximum number of mutually compatible activities.
+                    <br><br>
+                    <strong>Input:</strong> Set of activities with [Start, End] times.<br>
+                    <strong>Constraint:</strong> Activities cannot overlap.
+                </p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <button id="btnPrev" title="Previous Step">⏮</button>
+                    <button id="btnPlay" class="primary-btn">▶ Play</button>
+                    <button id="btnNext" title="Next Step">⏭</button>
+                    <button id="btnReset" title="Reset">↻</button>
+                    <button id="btnRandom" title="New Random Input">🎲</button>
+                </div>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedRange" min="100" max="1900" value="1000">
+                    <span>Fast</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Step</h3>
+                <div id="step-counter" style="margin-bottom: 5px; font-weight: bold; color: var(--accent);">0 / 0</div>
+                <p id="step-desc" class="status-text">Ready to start...</p>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div id="canvas-container">
+                <div id="timeline"></div>
+                <!-- Activities injected here -->
+            </div>
+            
+            <div class="pseudocode-container">
+                <div class="code-line" id="line-1">Sort activities by finish time</div>
+                <div class="code-line" id="line-2">Select first activity (A1)</div>
+                <div class="code-line" id="line-3">last_finish_time = A1.finish</div>
+                <div class="code-line" id="line-4">For each remaining activity Ai:</div>
+                <div class="code-line" id="line-5">  If Ai.start >= last_finish_time:</div>
+                <div class="code-line" id="line-6">    Select Ai</div>
+                <div class="code-line" id="line-7">    last_finish_time = Ai.finish</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Data
+        let ACTIVITIES = [
+            { id: 'A1', start: 1, end: 4 },
+            { id: 'A2', start: 3, end: 5 },
+            { id: 'A3', start: 0, end: 6 },
+            { id: 'A4', start: 5, end: 7 },
+            { id: 'A5', start: 3, end: 9 },
+            { id: 'A6', start: 5, end: 9 },
+            { id: 'A7', start: 6, end: 10 },
+            { id: 'A8', start: 8, end: 11 },
+            { id: 'A9', start: 8, end: 12 },
+            { id: 'A10', start: 2, end: 14 },
+            { id: 'A11', start: 12, end: 16 }
+        ];
+
+        let player;
+        const container = document.getElementById('canvas-container');
+        const timeline = document.getElementById('timeline');
+
+        function generateRandomInput() {
+            const count = Math.floor(Math.random() * 5) + 8; // 8-12 activities
+            const newActs = [];
+            for(let i=0; i<count; i++) {
+                const start = Math.floor(Math.random() * 14);
+                const duration = Math.floor(Math.random() * 5) + 2;
+                newActs.push({ id: 'A'+(i+1), start: start, end: start+duration });
+            }
+            ACTIVITIES = newActs;
+            const steps = generateSteps(ACTIVITIES);
+            player.setSteps(steps);
+        }
+
+        function generateSteps(data) {
+            const steps = [];
+            
+            // Step 0: Initial State (unsorted visual, but logic implies sorted)
+            // Ideally we animate sorting, but for simplicity we show them sorted by finish time.
+            let sortedData = [...data].sort((a, b) => a.end - b.end);
+
+            steps.push({
+                description: "Initial activities set. We sort them by <strong>finish time</strong> (increasing).",
+                codeLine: 1,
+                state: { activities: sortedData, selected: [], rejected: [], current: null, lastFinish: -1 }
+            });
+
+            const selected = [];
+            const rejected = [];
+            let lastFinish = -1;
+
+            // Step 1: Select first
+            const first = sortedData[0];
+            selected.push(first.id);
+            lastFinish = first.end;
+            
+            steps.push({
+                description: `Select the first activity <strong>${first.id}</strong> because it finishes earliest.`,
+                codeLine: 2,
+                state: { activities: sortedData, selected: [...selected], rejected: [], current: first.id, lastFinish: lastFinish }
+            });
+
+            // Loop
+            for(let i = 1; i < sortedData.length; i++) {
+                const act = sortedData[i];
+                
+                // Checking step
+                steps.push({
+                    description: `Checking <strong>${act.id}</strong> (Start: ${act.start}). <br>Does it start after last selected finishes (${lastFinish})?`,
+                    codeLine: 5,
+                    state: { activities: sortedData, selected: [...selected], rejected: [...rejected], current: act.id, lastFinish: lastFinish }
+                });
+
+                if (act.start >= lastFinish) {
+                    selected.push(act.id);
+                    lastFinish = act.end;
+                    steps.push({
+                        description: `<strong>${act.id}</strong> is compatible (${act.start} >= ${lastFinish}). <span style='color:var(--success)'>Selected!</span>`,
+                        codeLine: 6,
+                        state: { activities: sortedData, selected: [...selected], rejected: [...rejected], current: act.id, lastFinish: lastFinish }
+                    });
+                } else {
+                    rejected.push(act.id);
+                    steps.push({
+                        description: `<strong>${act.id}</strong> overlaps. <span style='color:var(--error)'>Rejected.</span>`,
+                        codeLine: 5, // Staying on check line implies fail
+                        state: { activities: sortedData, selected: [...selected], rejected: [...rejected], current: act.id, lastFinish: lastFinish }
+                    });
+                }
+            }
+
+            steps.push({
+                description: `Finished! Selected ${selected.length} activities.`,
+                codeLine: null,
+                state: { activities: sortedData, selected: [...selected], rejected: [...rejected], current: null, lastFinish: lastFinish }
+            });
+
+            return steps;
+        }
+
+        function render(state) {
+            // Clear existing bars (except timeline)
+            const existingBars = document.querySelectorAll('.activity-bar');
+            existingBars.forEach(b => b.remove());
+            const existingLabels = document.querySelectorAll('.time-label');
+            existingLabels.forEach(l => l.remove());
+
+            // Determine max time for scaling
+            const maxTime = Math.max(...state.activities.map(a => a.end)) + 1;
+            const widthPerUnit = (container.clientWidth - 100) / maxTime;
+
+            // Draw ticks
+            for(let i=0; i<=maxTime; i++) {
+                const tick = document.createElement('div');
+                tick.className = 'time-label';
+                tick.innerText = i;
+                tick.style.left = (50 + i * widthPerUnit) + 'px';
+                container.appendChild(tick);
+            }
+
+            // Draw activities
+            state.activities.forEach((act, index) => {
+                const el = document.createElement('div');
+                el.className = 'activity-bar';
+                el.innerText = act.id;
+                
+                // Position
+                const left = 50 + act.start * widthPerUnit;
+                const width = (act.end - act.start) * widthPerUnit;
+                
+                el.style.left = `${left}px`;
+                el.style.width = `${width}px`;
+                
+                // Stagger vertical position to avoid total overlap mess
+                // Modulo math for basic staggering
+                const row = index % 5; 
+                el.style.top = `calc(50% + ${(row - 2) * 45}px)`; 
+
+                // Styles based on state
+                if (state.selected.includes(act.id)) {
+                    el.classList.add('selected');
+                } else if (state.rejected.includes(act.id)) {
+                    el.classList.add('rejected');
+                }
+                
+                if (state.current === act.id) {
+                    el.classList.add('checking');
+                }
+
+                container.appendChild(el);
+            });
+        }
+
+        // Init
+        const steps = generateSteps(ACTIVITIES);
+        player = new StepPlayer(render, null);
+        player.setSteps(steps);
+
+        window.addEventListener('resize', () => player.updateUI());
+        document.getElementById('btnRandom').addEventListener('click', generateRandomInput);
+    </script>
+</body>
+</html>

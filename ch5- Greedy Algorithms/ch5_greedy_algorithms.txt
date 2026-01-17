@@ -1,0 +1,605 @@
+================================================================================
+Ch5 Greedy Algorithms
+================================================================================
+
+
+--- Slide 1 ---
+Faculty of Information Technology - Computer Science Department
+1
+Algorithm Design and Analysis
+
+
+--- Slide 2 ---
+Faculty of Information Technology - Computer Science Department
+2
+Algorithm Design and Analysis
+
+
+--- Slide 3 ---
+Chapter 5: Greedy Algorithms
+3
+Faculty of Information Technology - Computer Science Department
+
+
+--- Slide 4 ---
+Optimization problem
+In mathematics and computer science, an optimization problem is the problem of finding the best solution from all feasible solutions.
+Examples
+The minimum cost for travelling from city A to City B.
+The minimum waiting time to process several processes where each process has a different execution time.
+Maximizing the revenue in a factory the produces different items, with different prices, and different production time.
+Usually, optimization problems are handled through these types of algorithms:
+Greedy methods
+Dynamic programming
+Branch and bound algorithms
+4
+
+
+--- Slide 5 ---
+5
+Optimization problem
+
+
+--- Slide 6 ---
+6
+Optimization problem
+
+
+--- Slide 7 ---
+Here, the thing to note is that:
+
+After each iteration, he is making an optimal local choice, a choice that is greedy in its nature, hoping to find the optimal global choice for solving the problem.
+7
+Optimization problem
+
+
+--- Slide 8 ---
+Greedy algorithms: an algorithmic paradigm that follows the problem solving approach of making the locally optimal choice at each stage with the hope of finding a global optimum.
+Pros: simple, easy to implement, run fast
+Cons: very often they do not provide a globally optimum solution
+Greedy Algorithms
+8
+
+
+--- Slide 9 ---
+With this example, we will see how greedy algorithms makes locally optimal choices. However, ending up at a non optima solution.
+Example
+The problem is to find the largest sum from the root to  a leaf
+9
+Conclusion: making optimal locally greedy choices do not always leads to a global optimal choice.
+
+
+--- Slide 10 ---
+10
+Greedy Algorithms Applications
+Scheduling:
+Activity Selection Problem
+Job Scheduling Problem
+
+ Graph Algorithms
+ Minimum Spanning Tree
+  Prime Algorithm
+  Kruskal's Algorithm
+
+ Shortest path 
+   Dijkstra Algorithm
+
+  Other Optimization Problems
+Fractional Knapsack problem
+
+
+--- Slide 11 ---
+11
+Activity Selection Problem
+In the activity-selection problem, we wish to select a maximum-size subset of mutually compatible activities. We assume that the activities are sorted in monotonically increasing order of finish time:
+For example
+consider the following set S of activities:
+For this example, the subset{a3, a9, a11} consists of mutually compatible activities. It is not a maximum subset, however, since the subset {a1, a4, a8, a11} is larger. In fact, {a1, a4, a8, a11} is a largest subset of mutually compatible activities; another largest subset is {a2, a4, a9, a11}.
+
+
+--- Slide 12 ---
+12
+Making the greedy choice
+In fact, for the activity-selection problem, we need consider only one choice: the greedy choice in order to leave the resource available for as many other activities as possible by choosing the activity in S with the earliest finish time (a1).
+If we make the greedy choice, we have only one remaining subproblem to solve: finding activities that start after a1 finishes. Thus, all activities that are compatible with activity a1 must start after a1 finishes.
+Optimal substructure tells us that if a1 is in the optimal solution, then an optimal solution to the original problem consists of activity a1 and all the activities in an optimal solution to the subproblem S1.
+Greedy algorithms typically have a top-down design
+make a choice and then solve a subproblem, rather than the bottom-up technique of solving subproblems before making a choice.
+
+
+--- Slide 13 ---
+13
+Example 1:
+Problem: Given n activities with their start and finish times. Select the maximum number of activities that can be performed by a single person, assuming that a person can only work on a single activity at a time.
+1. Sort the activities according to their Finishing time
+2. Select the optimal local solution one by one as following
+	       A1  A3                                           Total Activities = 2
+
+
+--- Slide 14 ---
+14
+Problem: Given n activities with their start and finish times. Select the maximum number of activities that can be performed by a single person, assuming that a person can only work on a single activity at a time.
+Solution steps: 
+1. Sort the activities according to their finishing time.
+Example 2:
+
+
+--- Slide 15 ---
+15
+2.  Select the first activity from the sorted array
+3. Do the following for the remaining activities in the sorted array:
+If the start time of this activity is greater than or equal to the finish time of the previously selected activity then select this activity.
+A3  A2  A5  A6                          Total Activities = 4
+Activity selection problem - Code
+
+
+--- Slide 16 ---
+Activity Selection - Code
+Faculty of Information Technology - Computer Science Department
+16
+
+
+--- Slide 17 ---
+17
+Fractional Knapsack Problem
+The 0-1 knapsack problem is the following. A thief robbing a store finds n items. The i th item is worth i dollars and weighs wi pounds, where i and wi are integers. The thief wants to take as valuable a load as possible, but he can carry at most W pounds in his knapsack, for some integer W. Which items should he take?
+
+(We call this the 0-1 knapsack problem because for each item, the thief must either take it or leave it behind; he cannot take a fractional amount of an item or take an item more than once.)
+In the fractional knapsack problem, the setup is the same, but the thief can take fractions of items, rather than having to make a binary (0-1) choice for each item. You can think of an item in the 0-1 knapsack problem as being like a gold ingot and an item in the fractional knapsack problem as more like gold dust.
+
+
+--- Slide 18 ---
+18
+Although the problems are similar, we can solve the fractional knapsack problem by a greedy strategy, but we cannot solve the 0-1 problem by such a strategy.
+
+To solve the fractional problem, we first compute the value per pound vi/wi for each item. Obeying a greedy strategy, the thief begins by taking as much as possible of the item with the greatest value per pound. If the supply of that item is exhausted and he can still carry more, he takes as much as possible of the item with the next greatest value per pound, and so forth, until he reaches his weight limit W.
+Fractional Knapsack Problem
+
+
+--- Slide 19 ---
+19
+Problem
+
+
+--- Slide 20 ---
+20
+Solution
+
+
+--- Slide 21 ---
+21
+Greedy Solution
+
+
+--- Slide 22 ---
+22
+3.  We select A (as a whole), then B (as a whole), then C (2/3 of C)
+
+
+--- Slide 23 ---
+A Tree is a connected undirected graph that contains no cycles is called a tree
+A Spanning Tree of a graph G is a subgraph of G that is a tree and contains all the vertices of G
+
+
+
+
+
+
+
+Properties
+The spanning tree of a n –vertex Undirected Graph has exactly n-1 edges
+It connects all the Vertices in the Graph
+A Spanning tree has no Cycles
+Spanning Tree
+23
+
+
+--- Slide 24 ---
+Constructing Spanning Trees
+Any traversal of a connected, undirected graph visits all the vertices in that graph. The set of edges which are traversed during a traversal forms a spanning tree.
+(a) Graph G
+(b) Breadth-first spanning tree of G rooted at b
+(c) Depth-first spanning tree of G rooted at c
+24
+Figure (b) shows the spanning tree obtained from a breadth-first traversal starting at vertex b.
+Similarly, Figure (c) shows the spanning tree obtained from a depth-first traversal starting at vertex c.
+
+
+--- Slide 25 ---
+What is a Minimum-Cost Spanning Tree
+For an edge-weighted , connected, undirected graph, G, the total cost of G is the sum of the weights on all its edges.
+A minimum-cost spanning tree for G is a minimum spanning tree of G that has the least total cost.
+Example: The graph
+Has 16 spanning trees. Some are:
+The graph has two minimum-cost spanning trees, each with a cost of 6:
+25
+
+
+--- Slide 26 ---
+Minimum-Cost Spanning Trees
+Some applications of Minimum_cost Spanning Tree:
+ Building cable networks that join n locations with minimum cost.
+
+ Building a road network that joins n cities with minimum cost.
+
+ Obtaining an independent set of circuit equations for an electrical network.
+
+ In pattern recognition minimal spanning trees can be used to find noisy pixels.
+
+ Some Greedy Algorithms that used for finding the Minimum_cost Spanning Tree
+ Prim’s algorithm
+
+ Kruskal’s algorithm
+26
+
+
+--- Slide 27 ---
+It is a Vertex based algorithm.
+
+ The tree starts from an arbitrary root vertex r and grows until the tree spans all the vertices in V.
+
+ At each step, add to the tree A the edge that connects A to an isolated vertex of GA = (V, A).
+ Adds only edges that are safe for A.
+ When algorithm terminates, edges in A form MST.
+ MST A for G: A={(v, p[v]): v ε V-{r}}.
+
+ Grows one tree T, one vertex at a time
+Prim’s Algorithm
+
+
+--- Slide 28 ---
+MST-Prim(G,w,r)	                         //G is a graph with weight w and a root vertex r
+1 for each u Î V[G]
+2   key[u] ¬ ¥		
+3   p[u] ¬ NIL
+4 key[r] ¬ 0
+5 Q = Æ                                  // Q is a Queue of all vertices out of tree T
+6 for each vertex u ∈ G.V
+7 INSERT(Q, u)                           // add u to T
+8 while Q ¹ Æ do
+u ¬ ExtractMin(Q)                     // take the vertex with minimum key
+  for each v Î Adj[u] do
+9         if v Î Q and w(u,v)  key[v] then
+10            p[v]	¬ u
+11            key[v]	¬ w(u,v)
+// update keys of u’s neighbors not in T
+Prim’s Algorithm - Code
+
+
+--- Slide 29 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 30 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 31 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 32 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 33 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 34 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 35 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 36 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 37 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 38 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 39 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 40 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 41 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 42 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 43 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 44 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 45 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 46 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 47 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 48 ---
+Prim’s Algorithm - Example
+
+
+--- Slide 49 ---
+MST-Prim(G,w,r)	                         
+1 for each u Î V[G]
+2   key[u] ¬ ¥		
+3   p[u] ¬ NIL
+4 key[r] ¬ 0
+5 Q = Æ                                  
+6 for each vertex u ∈ G.V
+7 INSERT(Q, u)                         
+8 while Q ¹ Æ do
+u ¬ ExtractMin(Q)                     
+  for each v Î Adj[u] do
+9         if v Î Q and w(u,v)  key[v] then
+10            p[v]	¬ u
+11            key[v]	¬ w(u,v)
+Prim’s Algorithm – Complexity analysis
+Extract-Min is executed |V| times
+while loop is executed |V| times
+Decrease-Key is executed O(|E|) times
+
+
+--- Slide 50 ---
+Time complexity depends on data structure Q
+ Binary heap: O(E lg V):
+BuildHeap takes O(V) time
+number of “while” iterations: V
+ExtractMin takes O(lg V) time
+total number of “for” iterations: E
+DecreaseKey takes O(lg V) time
+ Hence,  
+Time = V + V. T(ExtractMin) + E. T(DecreaseKey)
+Time = O(V lg V + E lg V) = O(E lg V)
+Since E  V – 1  (because G is connected)
+Prim’s Algorithm – Complexity analysis
+
+
+--- Slide 51 ---
+Kruskal's Algorithm
+Edge based algorithm
+
+ Kruskal’s algorithm also finds the minimum cost spanning tree of a graph by adding  edges one-by-one.
+
+ Pseudocode
+enqueue edges of G in a queue in increasing order of cost.
+T =  ;
+while(queue is not empty){
+   dequeue an edge e;
+   if(e does not create a cycle with edges in T)
+       add e to T;
+}
+return T;
+
+
+--- Slide 52 ---
+Kruskal's Algorithm
+INPUT:
+edge-weighted graph G = (V, E), with |V| = n
+
+ OUTPUT:
+a spanning tree T of G 
+touches all vertices,
+has n-1 edges
+of minimum cost ( = total edge weight)
+
+ Algorithm:
+Start with T empty, 
+Add the edges one at a time, in increasing weight order 
+An edge is accepted it if connects vertices of distinct trees (if the edge does not form a cycle in T)
+until T contains n-1 edges
+
+
+--- Slide 53 ---
+Data Structures For Kruskal’s Algorithm
+Initially, T is empty
+
+
+
+
+Initial sets are: 
+{1} {2} {3} {4} {5} {6} {7} {8}
+
+Does the addition of an edge (u, v) to T result in a cycle? If not, add edge to T
+s1 = Find-Set(u); s2 = Find-Set(v);
+if (s1  s2) then Union(s1, s2);
+1
+3
+5
+7
+2
+4
+6
+8
+
+
+--- Slide 54 ---
+Kruskal's Algorithm Code
+MST-Kruskal(G,w)
+1 T ¬ Æ
+2 for each vertex v Î V[G] do
+3    Make-Set(v)
+4 sort the edges of E by nondecreasing weight w
+5 for each (u,v)ÎE, in nondecreasing of weight do
+6   if Find-Set(u) ¹ Find-Set(v) then
+7      T ¬ T È {(u,v)}
+8      Union(Set(u),Set(v))
+9 return T
+
+
+--- Slide 55 ---
+Mark each vertex as being in a Set
+Initially each vertex is in a set of it’s own
+Sort the edges in increasing order of the weight
+Take the edges in the sorted order (smallest one first)
+If it’s Safe to add the edge
+Add it to the tree, don’t worry about the overall structure
+It is Safe to connect to vertices from different sets, No Cycles will be formed.
+Our implementation of Kruskal’s algorithm uses a disjoint-set data structure to maintain several set of elements.
+Each set contains the vertices in a tree of the current forest.
+The operation Find-Set(u) returns a representative element from the set that contains u.
+Thus, we can determine whether two vertices u and v belong to the same tree by testing whether Find-Set(u)=Find-Set(v).
+The combining of trees is accomplished by the Union() procedure.
+Kruskal’s Algorithm
+55
+
+
+--- Slide 56 ---
+To implement a disjoint-set forest with the union-by-rank heuristic, we must keep track of ranks.
+With each node x, we maintain the integer value rank[x], which is an upper bound on the height of x.
+When a singleton set is created by Make-Set(), the initial rank of the single node in the corresponding tree is 0.
+Each Find-Set() operation leaves all ranks unchanged.
+When applying Union() to two trees, there are two cases, depending on whether the roots have equal rank.
+If unequal ranks, we make root of the higher rank the parent of the root of other, but their ranks remain same.
+If equal ranks, we arbitrarily choose one of the roots as the parent and increment its rank.
+56
+Kruskal’s Algorithm (Contd.)
+
+
+--- Slide 57 ---
+Trace Kruskal's algorithm in finding a minimum-cost spanning tree for the undirected, weighted graph given below:
+The minimum cost is: 24
+57
+Kruskal’s algorithm Example
+
+
+--- Slide 58 ---
+Kruskal’s Algorithm Complexity analysis
+Kruskal’s Algorithm consists of two stages.
+Initializing the set A in line 1 takes O(1) time.
+Sorting the edges by weight in line 4.
+ takes	O(E lg E) 
+
+Performing 
+|V| MakeSet() operations		                                                 // for loop in lines 2-3.
+|E| FindSet(),			                                                            //for loop in lines 5-8.
+|V| - 1 Union(), 			                                                            //for loop in lines 5-8. 
+which takes 	O(V + E) 
+
+ The total running time is
+O(E lg E)
+Observing that │E │< │V│2 we have lg │E│ = O(lg V), So total running time becomes O(E lg V).
+
+
+--- Slide 59 ---
+Review Questions
+Find the breadth-first spanning tree and depth-first spanning tree of the  graph GA shown above.
+
+For the graph GB  shown above, trace the execution of Prim's algorithm as it finds the minimum-cost spanning tree of the graph starting from vertex a.
+
+Repeat question 2 above using Kruskal's algorithm.
+GB
+59
+Using the following graphs answer the question 1 - 3
+
+
+--- Slide 60 ---
+Shortest path problem
+In an edge-weighted graph, the weight of an edge measures the cost of traveling that edge.
+For example, in a graph representing a network of airports, the weights could represent: distance, cost or time.
+Such a graph could be used to answer any of the following:
+What is the fastest way to get from A to B?
+Which route from A to B is the least expensive?
+What is the shortest possible distance from A to B?
+60
+Each of these questions is an instance of the same problem:
+The shortest path problem!
+Shortest path problem is the problem of finding a path between two nodes in a graph such that the sum of the weights of its constituent edges is minimized. 
+
+If all the edges in a graph have non-negative weights, then it is possible to find the shortest path from any two vertices.
+For example, in the figure below, the shortest path from B to F is { B, A, C, E, F } with a total cost of nine.
+Thus, the problem is well defined for a graph that contains non-negative weights.
+There exist Several well known algorithms for solving the shortest path problem and its variants like Dijkstra's Algorithm.
+
+
+--- Slide 61 ---
+The Dijkstra's Algorithm
+Dijkstra’s Algorithm uses the Greedy Method
+ It is a very Efficient Algorithm to calculate the Shortest Path for a non-negative weights graph.
+ It finds the shortest path from an initial vertex, say s, to all the other vertices.
+The algorithm maintains a set S of vertices whose final shortest-path weights from source s have already been determined.
+Take the adjacent nodes and update the current shortest distance.
+The algorithm repeatedly selects the vertex u ϵ V-S, with minimum shortest distance estimated.
+Update the current shortest distance of the adjacent vertices where necessary.
+i.e. when the new distance is less than the  existing value.
+Stop when all the Vertices are checked.
+61
+
+
+--- Slide 62 ---
+The Dijkstra's Algorithm_Code
+// Let V be the set of all vertices in G, and s the start vertex.
+for each vertex v  {
+   currentDistance(s-v) = ∞;
+   predecessor(v) = undefined;
+}
+currentDistance(s-s) = 0;
+T = V;
+while(T  ){
+   v = a vertex in T with minimal currentDistance from s;
+    T= T – {v};
+    for(each vertex u adjacent to v and in T){
+        if(currentDistance(s-u) > currentDistance(s-v) + weight(edge(vu)){
+             currentDistance(s-u) = currentDistance(s-v) + weight(edge(vu));
+             predecessor(u) = v;
+        }    }   }
+For each vertex, the algorithm keeps track of its current distance from the starting vertex and the predecessor on the current path
+62
+
+
+--- Slide 63 ---
+The running time of the Dijkstra’s Algorithm depends on how the min-priority queue is implemented.
+
+The for loop in the initialization step, takes |V| times.
+
+The while loop executed |v| times.
+
+Each Extract-Min() operation takes |V| time.
+
+Each edge in the adjacency list Adj[v] is examined in the for loop inside the while loop exactly once during the course of the algorithm.
+Since the total number of edges in adjacency list is |E|, there are a total of |E| iterations of this for loops. So, the total running time is O(V2+E)=O(V2).
+
+If the graph is sufficiently sparse, it is practical to implement min-priority queue with a binary min-heap.
+the total running time is O(E lg V).
+63
+The Dijkstra's Algorithm_Complexity analysis
+
+
+--- Slide 64 ---
+The Dijkstra's Algorithm_ Example
+Tracing Dijkstra’s algorithm starting at vertex B:
+The resulting vertex-weighted graph is:
+64
+
+
+--- Slide 65 ---
+Review Question
+Use the graph Gc shown above to trace the execution of Dijkstra's algorithm as it solves the shortest path problem starting from vertex a.
+65

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 5: Greedy Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Enable scrolling for index page */
+        html, body {
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: auto;
+            min-height: 100vh;
+        }
+
+        body {
+            display: block;
+        }
+
+        .algo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .algo-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .algo-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .algo-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .algo-card p {
+            font-size: 0.95rem;
+            color: var(--text-mute);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+
+        .algo-card .tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: var(--accent);
+            align-self: flex-start;
+        }
+
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        /* Hero Section inside Chapter */
+        .chapter-hero {
+            text-align: center;
+            padding: 60px 20px 20px;
+        }
+        .chapter-hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .chapter-hero p { color: var(--text-mute); max-width: 600px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <span>Chapter 5</span>
+        </div>
+        <div class="page-title">Greedy Algorithms</div>
+        <div></div> 
+    </header>
+
+    <div class="chapter-hero">
+        <h1>Greedy Algorithms</h1>
+        <p>A paradigm that follows the problem-solving approach of making the locally optimal choice at each stage with the hope of finding a global optimum.</p>
+    </div>
+
+    <div class="algo-grid">
+        <a href="activity-selection.html" class="algo-card">
+            <div class="icon">📅</div>
+            <h2>Activity Selection</h2>
+            <p>Select the maximum number of mutually compatible activities that can be performed by a single person.</p>
+            <span class="tag">Scheduling</span>
+        </a>
+
+        <a href="fractional-knapsack.html" class="algo-card">
+            <div class="icon">💰</div>
+            <h2>Fractional Knapsack</h2>
+            <p>Fill a knapsack with fractions of items to maximize value without exceeding weight limit.</p>
+            <span class="tag">Resource Allocation</span>
+        </a>
+
+        <a href="prim-mst.html" class="algo-card">
+            <div class="icon">🕸️</div>
+            <h2>Prim's MST</h2>
+            <p>Find the Minimum Spanning Tree by growing from a single vertex, adding the cheapest connection.</p>
+            <span class="tag">Graph Theory</span>
+        </a>
+
+        <a href="kruskal-mst.html" class="algo-card">
+            <div class="icon">🔗</div>
+            <h2>Kruskal's MST</h2>
+            <p>Find the Minimum Spanning Tree by sorting edges and connecting forests without cycles.</p>
+            <span class="tag">Graph Theory</span>
+        </a>
+
+        <a href="dijkstra.html" class="algo-card">
+            <div class="icon">📍</div>
+            <h2>Dijkstra's Algorithm</h2>
+            <p>Find the shortest path from a source node to all other nodes in a graph with non-negative weights.</p>
+            <span class="tag">Shortest Path</span>
+        </a>
+    </div>
+</body>
+</html>

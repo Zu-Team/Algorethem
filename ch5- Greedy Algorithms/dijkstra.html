@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijkstra's Algorithm - Greedy Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .trace-table {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            max-width: 500px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+        .trace-table table {
+            border-collapse: collapse;
+            width: 100%;
+            color: var(--text-main);
+        }
+        .trace-table th {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+        .trace-table td {
+            padding: 6px 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        .trace-table td.active {
+            background: rgba(255, 234, 0, 0.3);
+            font-weight: bold;
+        }
+        .trace-table td.finalized {
+            background: rgba(0, 230, 118, 0.2);
+            color: var(--text-mute);
+        }
+        .trace-table td.updated {
+            background: rgba(33, 150, 243, 0.2);
+            color: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <a href="index.html">Chapter 5</a> &gt; <span>Dijkstra</span>
+        </div>
+        <div class="page-title">Dijkstra's Algorithm</div>
+        <div></div>
+    </header>
+
+    <div class="main-grid">
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Problem</h3>
+                <p class="status-text" style="font-size: 0.9rem; min-height: auto;">
+                    Find shortest paths from Source to all other vertices using Dijkstra's algorithm.
+                    <br><br>
+                    <strong>Strategy:</strong> Greedily select the closest unvisited vertex and relax its neighbors.
+                </p>
+            </div>
+
+            <div class="panel-section">
+                <h3>Controls</h3>
+                <div class="controls">
+                    <button id="btnPrev">⏮</button>
+                    <button id="btnPlay" class="primary-btn">▶ Play</button>
+                    <button id="btnNext">⏭</button>
+                    <button id="btnReset">↻</button>
+                    <button id="btnRandom" title="New Random Graph">🎲</button>
+                    <button id="btnExample" title="Reset to Chapter Example">📖</button>
+                </div>
+                <div class="speed-control">
+                    <span>Slow</span>
+                    <input type="range" id="speedRange" min="100" max="1900" value="1000">
+                    <span>Fast</span>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Step</h3>
+                <div id="step-counter" style="margin-bottom: 5px; font-weight: bold; color: var(--accent);">0 / 0</div>
+                <p id="step-desc" class="status-text">Ready...</p>
+            </div>
+        </div>
+
+        <div class="viz-panel">
+            <div id="canvas-container">
+                <div class="trace-table" id="trace-table-dom"></div>
+                <!-- SVG -->
+            </div>
+            
+            <div class="pseudocode-container">
+                <div class="code-line" id="line-1">Initialize: dist[v] = ∞ for all v, dist[source] = 0</div>
+                <div class="code-line" id="line-2">T = set of all vertices (unvisited)</div>
+                <div class="code-line" id="line-3">While T is not empty:</div>
+                <div class="code-line" id="line-4">  v = vertex in T with minimum dist[v]</div>
+                <div class="code-line" id="line-5">  Remove v from T</div>
+                <div class="code-line" id="line-6">  For each neighbor u of v where u is in T:</div>
+                <div class="code-line" id="line-7">    If dist[u] > dist[v] + weight(v,u):</div>
+                <div class="code-line" id="line-8">      dist[u] = dist[v] + weight(v,u)</div>
+                <div class="code-line" id="line-9">      predecessor[u] = v</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Chapter Example (Default)
+        const CHAPTER_EXAMPLE = {
+            nodes: [
+                { id: 'A', x: 200, y: 100 },
+                { id: 'B', x: 100, y: 200 },
+                { id: 'C', x: 300, y: 200 },
+                { id: 'D', x: 400, y: 150 },
+                { id: 'E', x: 400, y: 250 },
+                { id: 'F', x: 500, y: 200 }
+            ],
+            edges: [
+                { src: 'B', dest: 'A', w: 3 },
+                { src: 'B', dest: 'C', w: 5 },
+                { src: 'A', dest: 'C', w: 1 },
+                { src: 'C', dest: 'D', w: 2 },
+                { src: 'C', dest: 'E', w: 4 },
+                { src: 'D', dest: 'F', w: 5 },
+                { src: 'E', dest: 'F', w: 1 },
+                { src: 'D', dest: 'A', w: 5 }
+            ],
+            source: 'B'
+        };
+
+        // Graph Data (starts with chapter example)
+        let NODES = JSON.parse(JSON.stringify(CHAPTER_EXAMPLE.nodes));
+        let EDGES = JSON.parse(JSON.stringify(CHAPTER_EXAMPLE.edges));
+        let SOURCE = CHAPTER_EXAMPLE.source;
+
+        // Get neighbors (DIRECTED - only outgoing edges)
+        function getNeighbors(u) {
+            return EDGES.filter(e => e.src === u).map(e => ({
+                id: e.dest,
+                w: e.w
+            }));
+        }
+
+        // Random Graph Generator with organized circular layout
+        function generateRandomGraph() {
+            const numNodes = Math.floor(Math.random() * 3) + 5; // 5-7
+            const newNodes = [];
+            let newEdges = [];
+            const width = 600;
+            const height = 350;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35;
+
+            // Generate nodes in organized circular layout
+            for(let i=0; i<numNodes; i++) {
+                const angle = (2 * Math.PI * i) / numNodes;
+                const node = {
+                    id: String.fromCharCode(65 + i),
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                };
+                newNodes.push(node);
+            }
+
+            // Generate directed edges (not bidirectional)
+            const edgeSet = new Set();
+            for(let i=0; i<numNodes; i++) {
+                for(let j=0; j<numNodes; j++) {
+                    if(i !== j && Math.random() < 0.3) {
+                        const edgeId = `${newNodes[i].id}-${newNodes[j].id}`;
+                        if(!edgeSet.has(edgeId)) {
+                            edgeSet.add(edgeId);
+                            newEdges.push({
+                                src: newNodes[i].id,
+                                dest: newNodes[j].id,
+                                w: Math.floor(Math.random() * 15) + 1
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Ensure source has at least one outgoing edge
+            const sourceNode = newNodes[0];
+            SOURCE = sourceNode.id;
+            if(newEdges.filter(e => e.src === SOURCE).length === 0) {
+                const target = newNodes[Math.floor(Math.random() * (numNodes - 1)) + 1];
+                newEdges.push({
+                    src: SOURCE,
+                    dest: target.id,
+                    w: Math.floor(Math.random() * 10) + 1
+                });
+            }
+
+            NODES = newNodes;
+            EDGES = newEdges;
+            
+            // Regenerate steps
+            const steps = generateSteps();
+            player.setSteps(steps);
+            player.reset();
+        }
+
+        // Reset to chapter example
+        function resetToExample() {
+            NODES = JSON.parse(JSON.stringify(CHAPTER_EXAMPLE.nodes));
+            EDGES = JSON.parse(JSON.stringify(CHAPTER_EXAMPLE.edges));
+            SOURCE = CHAPTER_EXAMPLE.source;
+            
+            const steps = generateSteps();
+            player.setSteps(steps);
+            player.reset();
+        }
+
+        // Drag & Drop
+        let isDragging = false;
+        let draggedNodeId = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function handleMouseDown(e, nodeId) {
+            if (e.button !== 0) return;
+            isDragging = true;
+            draggedNodeId = nodeId;
+            e.stopPropagation();
+            e.preventDefault();
+            const rect = container.getBoundingClientRect();
+            const node = NODES.find(n => n.id === nodeId);
+            if(node) {
+                dragOffsetX = (e.clientX - rect.left) - node.x;
+                dragOffsetY = (e.clientY - rect.top) - node.y;
+            }
+            document.body.style.cursor = 'grabbing';
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggedNodeId) return;
+            const rect = container.getBoundingClientRect();
+            const node = NODES.find(n => n.id === draggedNodeId);
+            if (node) {
+                let x = (e.clientX - rect.left) - dragOffsetX;
+                let y = (e.clientY - rect.top) - dragOffsetY;
+                node.x = Math.max(25, Math.min(rect.width - 25, x));
+                node.y = Math.max(25, Math.min(rect.height - 25, y));
+                player.updateUI();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if(isDragging) {
+                isDragging = false;
+                draggedNodeId = null;
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        let player;
+        const container = document.getElementById('canvas-container');
+        const tableEl = document.getElementById('trace-table-dom');
+
+        function generateSteps() {
+            let steps = [];
+            
+            // Initialize distances and predecessors
+            let dist = {};
+            let predecessor = {};
+            let T = []; // Unvisited set
+            
+            NODES.forEach(n => {
+                dist[n.id] = Infinity;
+                predecessor[n.id] = null;
+                T.push(n.id);
+            });
+            
+            dist[SOURCE] = 0;
+
+            // Track trace table data for each pass
+            let traceData = [];
+            let passNumber = 0;
+
+            // Initial state
+            const initialTrace = {
+                pass: 0,
+                active: null,
+                distances: {...dist},
+                predecessors: {...predecessor}
+            };
+            traceData.push(initialTrace);
+
+            steps.push({
+                description: `Initialize: dist[${SOURCE}]=0, dist[v]=∞ for all other vertices. T = {${T.join(', ')}}`,
+                codeLine: 1,
+                state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: null, checkingNeighbor: null, traceData: [...traceData] }
+            });
+
+            while(T.length > 0) {
+                passNumber++;
+                
+                // Find vertex in T with minimum dist (linear search)
+                let minDist = Infinity;
+                let v = null;
+                for(let u of T) {
+                    if(dist[u] < minDist) {
+                        minDist = dist[u];
+                        v = u;
+                    }
+                }
+
+                if(v === null || dist[v] === Infinity) break; // No reachable vertices left
+
+                // Create trace entry for this pass (before removing v)
+                const passTrace = {
+                    pass: passNumber,
+                    active: v,
+                    distances: {...dist},
+                    predecessors: {...predecessor},
+                    updates: []
+                };
+
+                // Remove v from T
+                T = T.filter(u => u !== v);
+
+                steps.push({
+                    description: `Pass ${passNumber}: Select <strong>${v}</strong> (min dist=${dist[v]}). Remove ${v} from T.`,
+                    codeLine: 4,
+                    state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: v, checkingNeighbor: null, traceData: [...traceData, passTrace] }
+                });
+
+                // For each neighbor u of v where u is still in T
+                const neighbors = getNeighbors(v);
+                for(let neighbor of neighbors) {
+                    const u = neighbor.id;
+                    const weight = neighbor.w;
+
+                    if(T.includes(u)) {
+                        steps.push({
+                            description: `Check neighbor <strong>${u}</strong> of ${v}. Edge weight: ${weight}.`,
+                            codeLine: 6,
+                            state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: v, checkingNeighbor: u, traceData: [...traceData, passTrace] }
+                        });
+
+                        const oldDist = dist[u];
+                        const newDist = dist[v] + weight;
+                        const conditionResult = newDist < oldDist;
+                        
+                        steps.push({
+                            description: `Condition: dist[${u}] > dist[${v}] + weight(${v},${u})<br>${oldDist === Infinity ? '∞' : oldDist} > ${dist[v]} + ${weight}<br>${oldDist === Infinity ? '∞' : oldDist} > ${newDist}<br>${conditionResult ? 'True' : 'False'}`,
+                            codeLine: 7,
+                            state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: v, checkingNeighbor: u, traceData: [...traceData, passTrace] }
+                        });
+
+                        if(conditionResult) {
+                            dist[u] = newDist;
+                            predecessor[u] = v;
+                            passTrace.updates.push({ vertex: u, oldDist: oldDist === Infinity ? '∞' : oldDist, newDist: newDist });
+                            
+                            // Update trace distances (create new object to avoid reference issues)
+                            passTrace.distances = {...passTrace.distances};
+                            passTrace.distances[u] = newDist;
+                            passTrace.predecessors = {...passTrace.predecessors};
+                            passTrace.predecessors[u] = v;
+                            
+                            steps.push({
+                                description: `Relax <strong>${u}</strong>. Update: dist[${u}] = ${newDist}, predecessor[${u}] = ${v}`,
+                                codeLine: 8,
+                                state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: v, checkingNeighbor: u, traceData: [...traceData, passTrace] }
+                            });
+                        } else {
+                            steps.push({
+                                description: `No update needed for <strong>${u}</strong>.`,
+                                codeLine: 7,
+                                state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: v, checkingNeighbor: u, traceData: [...traceData, passTrace] }
+                            });
+                        }
+                    }
+                }
+
+                // Add completed pass trace
+                traceData.push(passTrace);
+            }
+
+            steps.push({
+                description: "All reachable vertices processed. Shortest paths found.",
+                codeLine: null,
+                state: { dist: {...dist}, predecessor: {...predecessor}, T: [...T], active: null, checkingNeighbor: null, traceData: [...traceData] }
+            });
+
+            return steps;
+        }
+
+        function renderTraceTable(state) {
+            if(!state.traceData || state.traceData.length === 0) return;
+
+            const vertices = NODES.map(n => n.id).sort();
+            let html = '<table><thead><tr><th>Pass</th><th>Active</th>';
+            vertices.forEach(v => {
+                html += `<th>${v}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // Show each pass
+            state.traceData.forEach(trace => {
+                if(trace.pass === 0) {
+                    // Initial state
+                    html += '<tr><td>Init</td><td>-</td>';
+                    vertices.forEach(v => {
+                        const d = trace.distances[v];
+                        const val = d === Infinity ? '∞' : d;
+                        html += `<td>${val}</td>`;
+                    });
+                    html += '</tr>';
+                } else {
+                    html += `<tr><td>${trace.pass}</td><td><strong>${trace.active}</strong></td>`;
+                    vertices.forEach(v => {
+                        const d = trace.distances[v];
+                        const val = d === Infinity ? '∞' : d;
+                        let cls = '';
+                        
+                        // Active vertex is finalized (greyed out)
+                        if(v === trace.active) {
+                            cls = 'finalized';
+                        }
+                        // Updated vertices in this pass
+                        else if(trace.updates && trace.updates.some(u => u.vertex === v)) {
+                            cls = 'updated';
+                        }
+                        // Currently checking
+                        else if(state.checkingNeighbor === v && state.active === trace.active) {
+                            cls = 'active';
+                        }
+                        
+                        html += `<td class="${cls}">${val}</td>`;
+                    });
+                    html += '</tr>';
+                }
+            });
+
+            html += '</tbody></table>';
+            tableEl.innerHTML = html;
+        }
+
+        function render(state) {
+            // Render trace table
+            renderTraceTable(state);
+
+            // SVG
+            const oldSvg = container.querySelector('svg');
+            if(oldSvg) oldSvg.remove();
+            
+            const svg = createSVGElement('svg', { width: '100%', height: '100%' });
+
+            // Arrow marker for directed edges
+            const defs = createSVGElement('defs');
+            const marker = createSVGElement('marker', {
+                id: 'arrowhead',
+                markerWidth: '10',
+                markerHeight: '10',
+                refX: '9',
+                refY: '3',
+                orient: 'auto'
+            });
+            const polygon = createSVGElement('polygon', {
+                points: '0 0, 10 3, 0 6',
+                fill: '#666'
+            });
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            svg.appendChild(defs);
+
+            // Edges (DIRECTED)
+            EDGES.forEach(edge => {
+                const u = NODES.find(n => n.id === edge.src);
+                const v = NODES.find(n => n.id === edge.dest);
+                if(!u || !v) return;
+
+                const dx = v.x - u.x;
+                const dy = v.y - u.y;
+                const dist = Math.hypot(dx, dy);
+                const offset = 25;
+                const startX = u.x + (dx / dist) * offset;
+                const startY = u.y + (dy / dist) * offset;
+                const endX = v.x - (dx / dist) * offset;
+                const endY = v.y - (dy / dist) * offset;
+
+                const line = createSVGElement('line', {
+                    x1: startX, y1: startY, x2: endX, y2: endY,
+                    stroke: '#666', 'stroke-width': 2,
+                    'marker-end': 'url(#arrowhead)'
+                });
+
+                // Highlight if part of shortest path tree
+                if(state.predecessor && state.predecessor[edge.dest] === edge.src) {
+                    line.setAttribute('stroke', '#00e676');
+                    line.setAttribute('stroke-width', 3);
+                }
+                // Highlight if currently checking
+                else if(state.active === edge.src && state.checkingNeighbor === edge.dest) {
+                    line.setAttribute('stroke', '#ffea00');
+                    line.setAttribute('stroke-width', 3);
+                }
+
+                svg.appendChild(line);
+                
+                // Weight label
+                const midX = (startX + endX) / 2;
+                const midY = (startY + endY) / 2;
+                const text = createSVGElement('text', {
+                    x: midX, y: midY - 8,
+                    fill: '#888', 'text-anchor': 'middle',
+                    'font-size': '12px',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                text.textContent = edge.w;
+                svg.appendChild(text);
+            });
+
+            // Nodes
+            NODES.forEach(node => {
+                const g = createSVGElement('g', { 
+                    transform: `translate(${node.x}, ${node.y})`,
+                    style: 'cursor: grab'
+                });
+                g.addEventListener('mousedown', (e) => handleMouseDown(e, node.id));
+                
+                let fill = '#333';
+                if(state.T && !state.T.includes(node.id)) {
+                    fill = '#00e676'; // Visited (removed from T)
+                }
+                if(state.active === node.id) {
+                    fill = '#2196f3'; // Currently active
+                }
+                if(node.id === SOURCE) {
+                    fill = '#ff3d00'; // Source
+                }
+
+                const circle = createSVGElement('circle', {
+                    r: 25, fill: fill, stroke: '#fff', 'stroke-width': 2
+                });
+
+                const label = createSVGElement('text', {
+                    dy: 5, 'text-anchor': 'middle', fill: '#fff', 'font-weight': 'bold',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                label.textContent = node.id;
+                
+                // Distance label above
+                const d = state.dist[node.id];
+                const dText = d === Infinity ? '∞' : d;
+                const distLabel = createSVGElement('text', {
+                    dy: -35, 'text-anchor': 'middle', fill: '#ffea00', 'font-size': '14px',
+                    'font-weight': 'bold',
+                    style: 'pointer-events: none; user-select: none;'
+                });
+                distLabel.textContent = dText;
+
+                g.appendChild(circle);
+                g.appendChild(label);
+                g.appendChild(distLabel);
+                svg.appendChild(g);
+            });
+
+            container.appendChild(svg);
+        }
+
+        const steps = generateSteps();
+        player = new StepPlayer(render, null);
+        player.setSteps(steps);
+        
+        document.getElementById('btnRandom').addEventListener('click', generateRandomGraph);
+        document.getElementById('btnExample').addEventListener('click', resetToExample);
+    </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 6: Graph Algorithms</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .algo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .algo-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .algo-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .algo-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .algo-card p {
+            font-size: 0.95rem;
+            color: var(--text-mute);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+
+        .algo-card .tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: var(--accent);
+            align-self: flex-start;
+        }
+
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .chapter-hero {
+            text-align: center;
+            padding: 60px 20px 20px;
+        }
+        .chapter-hero h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .chapter-hero p { color: var(--text-mute); max-width: 600px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="breadcrumb">
+            <a href="../index.html">Home</a> &gt; <span>Chapter 6</span>
+        </div>
+        <div class="page-title">Graph Algorithms</div>
+        <div></div> 
+    </header>
+
+    <div class="chapter-hero">
+        <h1>Graph Algorithms</h1>
+        <p>Explore fundamental algorithms for searching and traversing graph data structures.</p>
+    </div>
+
+    <div class="algo-grid">
+        <a href="bfs.html" class="algo-card">
+            <div class="icon">🔍</div>
+            <h2>Breadth-First Search (BFS)</h2>
+            <p>Traverse a graph level by level, exploring all neighbor nodes at the present depth before moving to nodes at the next depth level.</p>
+            <span class="tag">Traversal</span>
+        </a>
+
+        <a href="dfs.html" class="algo-card">
+            <div class="icon">🌊</div>
+            <h2>Depth-First Search (DFS)</h2>
+            <p>Traverse a graph by exploring as far as possible along each branch before backtracking.</p>
+            <span class="tag">Traversal</span>
+        </a>
+    </div>
+</body>
+</html>
